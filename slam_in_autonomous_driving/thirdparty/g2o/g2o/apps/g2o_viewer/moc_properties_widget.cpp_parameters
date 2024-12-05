@@ -1,0 +1,7 @@
+-I/usr/include/eigen3
+-I/home/rico/slam_in_autonomous_driving/thirdparty/g2o
+-I/home/rico/slam_in_autonomous_driving/thirdparty/g2o
+-DUNIX
+-o
+/home/rico/slam_in_autonomous_driving/thirdparty/g2o/g2o/apps/g2o_viewer/moc_properties_widget.cpp
+/home/rico/slam_in_autonomous_driving/thirdparty/g2o/g2o/apps/g2o_viewer/properties_widget.h
