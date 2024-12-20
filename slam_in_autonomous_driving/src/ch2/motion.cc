@@ -1,5 +1,5 @@
 //
-// Created by xiang on 22-12-29.
+// Created by xiang on 22-12-29. Modified by Rico 2024-12-19
 //
 
 #include <gflags/gflags.h>
@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
     }
 
     double angular_velocity_rad = FLAGS_angular_velocity * sad::math::kDEG2RAD;  // 弧度制角速度
+    double z_acc = -0.1;
     SE3 pose;                                                                    // TWB表示的位姿
     Vec3d omega(0, 0, angular_velocity_rad);                                     // 角速度矢量
     Vec3d v_body(FLAGS_linear_velocity, 0, 0);                                   // 本体系速度
@@ -41,13 +42,21 @@ int main(int argc, char** argv) {
 
         // 更新自身旋转
         if (FLAGS_use_quaternion) {
+            // theta is halved in the quaternion world
             Quatd q = pose.unit_quaternion() * Quatd(1, 0.5 * omega[0] * dt, 0.5 * omega[1] * dt, 0.5 * omega[2] * dt);
+            // Quatd q = pose.unit_quaternion() * Quatd(std::cos(0.5 * angular_velocity_rad * dt), 0, 0, std::sin(0.5 * angular_velocity_rad * dt));
             q.normalize();
+            // auto& quat = q;
+            // std::cout << "=========Quaternion coefficients: "
+            //   << "w = " << quat.w() << ", "
+            //   << "x = " << quat.x() << ", "
+            //   << "y = " << quat.y() << ", "
+            //   << "z = " << quat.z() << std::endl;
             pose.so3() = SO3(q);
         } else {
             pose.so3() = pose.so3() * SO3::exp(omega * dt);
         }
-
+        v_body += Vec3d(0, 0, z_acc * dt);
         LOG(INFO) << "pose: " << pose.translation().transpose();
         ui.UpdateNavState(sad::NavStated(0, pose, v_world));
 
