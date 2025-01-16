@@ -24,6 +24,10 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    //TODO
+    std::cout<<"imu txt is not empty"<<std::endl;
+
+    // io_utils.cc
     sad::TxtIO io(FLAGS_imu_txt_path);
 
     // 该实验中，我们假设零偏已知
@@ -31,6 +35,7 @@ int main(int argc, char** argv) {
     Vec3d init_bg(00.000224886, -7.61038e-05, -0.000742259);
     Vec3d init_ba(-0.165205, 0.0926887, 0.0058049);
 
+    // imu_integration.h
     sad::IMUIntegration imu_integ(gravity, init_bg, init_ba);
 
     std::shared_ptr<sad::ui::PangolinWindow> ui = nullptr;
