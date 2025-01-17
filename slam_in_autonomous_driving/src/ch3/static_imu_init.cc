@@ -79,12 +79,12 @@ bool StaticIMUInit::TryInit() {
 
     // 检查IMU噪声
     if (cov_gyro_.norm() > options_.max_static_gyro_var) {
-        LOG(ERROR) << "陀螺仪测量噪声太大" << cov_gyro_.norm() << " > " << options_.max_static_gyro_var;
+        LOG(ERROR) << "Too much noise in Gyro!" << cov_gyro_.norm() << " > " << options_.max_static_gyro_var;
         return false;
     }
 
     if (cov_acce_.norm() > options_.max_static_acce_var) {
-        LOG(ERROR) << "加计测量噪声太大" << cov_acce_.norm() << " > " << options_.max_static_acce_var;
+        LOG(ERROR) << "Too much noise in acceleration!" << cov_acce_.norm() << " > " << options_.max_static_acce_var;
         return false;
     }
 
@@ -92,7 +92,7 @@ bool StaticIMUInit::TryInit() {
     init_bg_ = mean_gyro;
     init_ba_ = mean_acce;
 
-    LOG(INFO) << "IMU 初始化成功，初始化时间= " << current_time_ - init_start_time_ << ", bg = " << init_bg_.transpose()
+    LOG(INFO) << "IMU initialization successful. Time taken: " << current_time_ - init_start_time_ << ", bg = " << init_bg_.transpose()
               << ", ba = " << init_ba_.transpose() << ", gyro sq = " << cov_gyro_.transpose()
               << ", acce sq = " << cov_acce_.transpose() << ", grav = " << gravity_.transpose()
               << ", norm: " << gravity_.norm();

@@ -19,7 +19,7 @@ class IMUIntegration {
     IMUIntegration(const Vec3d& gravity, const Vec3d& init_bg, const Vec3d& init_ba)
         : gravity_(gravity), bg_(init_bg), ba_(init_ba) {}
 
-    // 增加imu读数
+    // 增加imu读数, IMU Integration
     void AddIMU(const IMU& imu) {
         double dt = imu.timestamp_ - timestamp_;
         if (dt > 0 && dt < 0.1) {

@@ -1,4 +1,5 @@
 <!-- To generate a pdf, do pandoc hw.md -o hw.pdf --pdf-engine=xelatex -->
+<!-- 1: No empty lines 2. No begin{gather} -->
 <!-- Solution: https://blog.csdn.net/Walking_roll/article/details/134310443 -->
 
 # Homework 2
@@ -12,17 +13,14 @@ Proof:
 For the mean, since rotation $R$ is a constant, we can take it out of the expectation calculation. So it's easy to show that
 
 $$
-\begin{gather*}
 \begin{aligned}
 & E[Ra] = R E[a] = 0
 \end{aligned}
-\end{gather*}
 $$
 
 For the covariance, we can use its definition and get
 
 $$
-\begin{gather*}
 \begin{aligned}
 & cov[Ra] = E[(Ra - E[Ra])(Ra - E[Ra])^T] 
 \\ &
@@ -32,17 +30,14 @@ $$
 \\ &
 = RE[aa^T]R^T
 \end{aligned}
-\end{gather*}
 $$
 
 Then, since $E[aa^T] = \lambda I$, we can get:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & RE[aa^T]R^T = \lambda R I R^T = \lambda I = \Sigma
 \end{aligned}
-\end{gather*}
 $$
 
 ## [Question 2]
@@ -52,10 +47,8 @@ In the motion process code, decompose the $F$ matrix and implement the motion eq
 After linearizing the error kinematics especially around rotational term, we can get its matrix form:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & \delta p_{k+1} = \delta p_{k} + \delta v \Delta t
-
 \\ &
 \delta v_{k+1} = \delta v_{k} + (- R(\tilde{a} - b_a)^{\land}\delta \theta - R\delta b_a + \delta g) \Delta t - \eta_v
 \\ &
@@ -67,19 +60,15 @@ $$
 \\ &
 \delta g_{k+1} = \delta g_{k}
 \end{aligned}
-\end{gather*}
 $$
 
 So,
 $$
-\begin{gather*}
-
+\begin{aligned}
 \delta x_{k+1}^* = F \delta x_{k}
-
 \\
 \Rightarrow
 \\
-
 \begin{bmatrix}
 \delta p_{k+1}*\\
 \delta v_{k+1}* \\
@@ -88,9 +77,7 @@ $$
 \delta  b_{a, k+1}*\\
 \delta g_{k+1}* \\
 \end{bmatrix}
-
 =
-
 \begin{bmatrix}
 I & I\Delta t & 0 & 0 & 0 &0 \\
 0 & I\Delta t & -R(\tilde{a}-b_a)^{\land}\Delta t & 0 & -R \Delta t & I\Delta t \\
@@ -99,7 +86,6 @@ I & I\Delta t & 0 & 0 & 0 &0 \\
 0 & 0 & 0 & 0 & I & 0 \\
 0 & 0 & 0 & 0 & 0 & I \\
 \end{bmatrix}
-
 \begin{bmatrix}
 \delta p_{k} \\
 \delta v_{k} \\
@@ -108,11 +94,35 @@ I & I\Delta t & 0 & 0 & 0 &0 \\
 \delta  b_{a, k} \\
 \delta g_{k} \\
 \end{bmatrix}
-
-\end{gather*}
+\end{aligned}
 $$
 
-CODE: TODO
+CODE: 
+
+```cpp
+// Implement the state propagation for various error states
+Vec18T dx_new = Vec18T::Zero();
+
+dx_new.template block<3, 1>(0, 0) =
+    dx_.template block<3, 1>(0, 0) +
+    dx_.template block<3, 1>(3, 0) * dt;
+
+dx_new.template block<3, 1>(3, 0) =
+    dx_.template block<3, 1>(3, 0) +
+    F.template block<3, 3>(3, 6) * dx_.template block<3, 1>(6, 0) +
+    F.template block<3, 3>(3, 12) * dx_.template block<3, 1>(12, 0) +
+    dx_.template block<3, 1>(15, 0) * dt;
+
+dx_new.template block<3, 1>(6, 0) =
+    F.template block<3, 3>(6, 6) * dx_.template block<3, 1>(6, 0) -
+    dx_.template block<3, 1>(9, 0) * dt;
+
+dx_new.template block<3, 1>(9, 0) = dx_.template block<3, 1>(9, 0);
+
+dx_new.template block<3, 1>(12, 0) = dx_.template block<3, 1>(12, 0);
+
+dx_new.template block<3, 1>(15, 0) = dx_.template block<3, 1>(15, 0);
+```
 
 ## [Question 3]
 
@@ -121,11 +131,9 @@ Use the left perturbation model to derive ESKF's kinematics and noise model. Als
 Using:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & b_{gt} = b_g + \delta b_g
 \end{aligned}
-\end{gather*}
 $$
 
 ### Angular Error Derivative
@@ -133,7 +141,6 @@ $$
 We can write out the rotation matrix:
 
 $$
-\begin{gather*}
 \begin{aligned}
 \text{Using R' = Rw:}
 \\
@@ -145,28 +152,21 @@ $$
 & R_t = \delta R R 
 \\
 & \rightarrow R_t' =  \delta R R' + \delta R' R
-
-
 \\
 \text{Using}: \delta R = exp(\delta \theta^{\land}):
 \\ &
 \delta R' = exp(\delta \theta^{\land})' = exp(\delta \theta^{\land}) (\delta \theta')^{\land}
-
 \\
 \text{Combine the two together}
 \\
 & R_t' = \delta R R (\tilde{w} - b_{gt} - \eta_g)^{\land} =  \delta R R' + \delta R' R
-
 \\ &
 \rightarrow exp(\delta \theta^{\land}) R (\tilde{w} - b_{gt} - \eta_g)^{\land} = exp(\delta \theta^{\land}) R' + exp(\delta \theta^{\land}) (\delta \theta')^{\land} R
-
 \\
 \text{Using}: R' = R [\tilde{w} - b_{g}]^{\land}
 \\ &
 \rightarrow R (\tilde{w} - b_{gt} - \eta_g)^{\land} = R [\tilde{w} - b_{g}]^{\land} + (\delta \theta')^{\land} R
-
 \\ \text{Using}: \phi^{\land} R = R(R^T \phi)^{\land}:
-
 \\ &
 \rightarrow R [\tilde{w} - b_{gt} - \eta_g]^{\land} = R [\tilde{w} - b_{g}]^{\land} + R(R^T (\delta \theta'))^{\land}
 \\ &
@@ -175,9 +175,7 @@ $$
 \text{Using lemma from question 1}: R \eta_g = \eta_g
 \\ &
 \rightarrow \delta \theta' = R(-\delta b_g) - \eta_g
-
 \end{aligned}
-\end{gather*}
 $$
 
 ### Velocity Error Derivative
@@ -185,32 +183,25 @@ $$
 From the definition of true value error and estimate error, we know
 
 $$
-\begin{gather*}
 \begin{aligned}
 & v_t' = v' + \delta v' := R_t(\tilde{a} - b_{at} - \eta_a) + g_t
-
 \\ &
 \text{Meanwhile}: v' + \delta v' := R(\tilde{a} - b_a) + g + \delta v'
 \end{aligned}
-\end{gather*}
 $$
 
 Expanding $R_t = Exp(\delta \theta) R$ and $b_{at} = b_a + \delta b_a$ gives:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & v_t' = Exp(\delta \theta) R (\tilde{a} - b_{a} - \delta b_a - \eta_a) + g_t
-
 \\ \text{Using Taylor Expansion:}
 \\ &
 \approx (I + \delta \theta^{\land}) R (\tilde{a} - b_{a} - \delta b_a - \eta_a) + g_t
-
 \\ \text{Ignoring small values}: - \delta \theta^{\land}(\delta b_a - \eta_a)
 \\ &
 \approx R (\tilde{a} - b_{a} - \delta b_a - \eta_a) + \delta \theta^{\land}R (\tilde{a} - b_{a}) + g_t
 \end{aligned}
-\end{gather*}
 $$
 
 To combine the above with the volocity error and using 
@@ -219,16 +210,12 @@ To combine the above with the volocity error and using
 - $\delta \theta^{\land} m = -m^{\land} \delta \theta$
 
 $$
-\begin{gather*}
 \begin{aligned}
 & R(\tilde{a} - b_a) + g + \delta v' \approx R (\tilde{a} - b_{a} - \delta b_a - \eta_a) + \delta \theta^{\land}R (\tilde{a} - b_{a}) + g + \delta g
-
 \\ &
 \rightarrow 
-
 \\ & \delta v' \approx R(- \delta b_a) - \eta_a + \delta g - [R(\tilde{a} - b_{a})]^{\land} \delta \theta
 \end{aligned}
-\end{gather*}
 $$
 
 The above is a linear form! 😊
@@ -236,7 +223,6 @@ The above is a linear form! 😊
 So all together, 
 
 $$
-\begin{gather*}
 \begin{aligned}
 & \delta p' = \delta v
 \\ &
@@ -250,13 +236,11 @@ $$
 \\ &
 \delta g' = 0
 \end{aligned}
-\end{gather*}
 $$
 
 ### Discrete Time Kinematics Model
 
 $$
-\begin{gather*}
 \begin{aligned}
 & \delta p_{k+1} = \delta p_{k} + \delta v \Delta t
 \\ &
@@ -270,30 +254,26 @@ $$
 \\ &
 \delta g_{k+1} = \delta g_{k}
 \end{aligned}
-\end{gather*}
 $$
 
 So F becomes:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & \begin{bmatrix}
 I & I\Delta t & 0 & 0 & 0 &0 \\
-0 & I\Delta t & -(R(\tilde{a}-b_a))^{\land}\Delta t & 0 & -R \Delta t & I\Delta t \\
+0 & I & -(R(\tilde{a}-b_a))^{\land}\Delta t & 0 & -R \Delta t & I\Delta t \\
 0 & 0 & I & -R \Delta t & 0 & 0 \\
 0 & 0 & 0 & I & 0 & 0 \\
 0 & 0 & 0 & 0 & I & 0 \\
 0 & 0 & 0 & 0 & 0 & I \\
 \end{bmatrix}
 \end{aligned}
-\end{gather*}
 $$
 
 Predictions of states are:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & p_{k+1, pred} = p_k + v \Delta t + \frac{1}{2}(R(\tilde{a} - b_a)) \Delta t^2 + \frac{1}{2} g \Delta t^2
 \\ &
@@ -307,20 +287,15 @@ ba_{k+1, pred} = ba_k
 \\ &
 g_{k+1, pred} = g_k
 \end{aligned}
-\end{gather*}
 $$
 
 Predictions of errors are:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & \delta x_{pred} = F \delta x
 \\ & P_{pred} = FPF^T + Q
-\text{where:}
-\\ & Q = diag(TODO)
 \end{aligned}
-\end{gather*}
 $$
 
 
@@ -335,13 +310,11 @@ First, a dual-RTK-GPS system can output: $y = [R_{GNSS}, P_{GNSS}]$
 In general $y = h(x) \oplus v$, but here we think the same observation model also holds true for $\delta x$:
 
 $$
-\begin{gather*}
 \begin{aligned}
-& z_{\theta} = Log(I^T R_{GNSS})
+& z_{\theta} = Log(R_{GNSS}I^T)
 \\ &
 z_{\delta \theta} = Log(R_{GNSS}R^T)    \text{(Left purterbation)}
 \end{aligned}
-\end{gather*}
 $$
 
 See? TODO (I'm not sure the above is true)
@@ -349,59 +322,48 @@ See? TODO (I'm not sure the above is true)
 This makes things easier, because this means our observation gives a direct observation of $\theta$. we can directly get: 
 
 $$
-\begin{gather*}
 \begin{aligned}
 & H_{\theta} = \frac{\partial h}{\partial \delta \theta} = I
 \end{aligned}
-\end{gather*}
 $$
 
 Same thing with position update:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & H_{p} = \frac{\partial h}{\partial \delta p} = I
 \end{aligned}
-\end{gather*}
 $$
 
 In the meantime, innovation $y \ominus h(x_{pred}) = [\delta p, \delta \theta]$ and it is:
 
 $$
-\begin{gather*}
 \begin{aligned}
-& y \ominus h(x_{pred}) = [p_{GNSS} - p, Log(R^T R_{GNSS})]
+& y \ominus h(x_{pred}) = [p_{GNSS} - p, Log(R_{GNSS}R^T)]
 \end{aligned}
-\end{gather*}
 $$
 
 So: 
 
 $$
-\begin{gather*}
 \begin{aligned}
 & H = \begin{bmatrix}
 I_3 & 0_3 & 0_3 & 0_3 & 0_3 & 0_3\\
 0_3 & I_3 & 0_3 & 0_3 & 0_3 & 0_3
 \end{bmatrix}
 \end{aligned}
-\end{gather*}
 $$
 
 Then the rest remains the same as EKF
 
 $$
-\begin{gather*}
 \begin{aligned}
 & K_{k+1} = P_{k+1}^{*} H_{k+1}^{T}(V^{-1} + H_{k+1} P_{k+1}^{*} H_{k+1}^T)
-
 \\ &
 P_{k+1} = P_{k+1}^{*} - K_{k+1} H P_{k+1}^{*}
 \\ &
 \delta x_{k+1} = K_{k+1} (z - h(x_{k+1}^{*}))
 \end{aligned}
-\end{gather*}
 $$
 
 #### Covariance Matrix Of Errors After Resetting
@@ -409,7 +371,6 @@ $$
 In discrete time, we approximate $p_{k+1}$ as the true value $p_t$ can define:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & x_{k+1} = x_k \oplus \delta x_k
 \\
@@ -427,7 +388,6 @@ b_{a, k+1} = b_{a, k} + \delta b_{a, k}
 \\ &
 g_{k+1} = g_{k} + \delta g_{k}
 \end{aligned}
-\end{gather*}
 $$
 
 Since we have applied a correction, we can go ahead and reset $\delta x = 0$
@@ -443,46 +403,95 @@ So, if we define:
 to find the new covariance matrix:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & exp(\delta \theta^+ )exp(\delta \theta_k) R_k = exp(\delta \theta)R_k 
 \\ \rightarrow
 \\ & 
 exp(\delta \theta) = exp(\delta \theta^+ )exp(\delta \theta_k)
-
 \\ &
 \rightarrow exp(\delta \theta^+ ) = exp(\delta \theta)exp(-\delta \theta_k )
 \\&
 \text{Using BCH:}
 \theta^+ \approx -\delta \theta_k + \delta \theta - \frac{1}{2} \delta \theta^{\land} \delta \theta_k + o((\delta \theta_k )^2)
-
 \\ &
 = \theta^+ \approx -\delta \theta_k + \delta \theta + \frac{1}{2} \delta \theta_k ^{\land} \delta \theta+ o((\delta \theta_k )^2)
-
 \\ &
 \rightarrow \frac{\partial \theta^+}{\partial \delta \theta} = I+\frac{1}{2} \delta \theta_k^{\land}
 \end{aligned}
-\end{gather*}
 $$
 
 Then, the overall "Jacobian" for the covariance is:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & J_k = [I_3, I_3, I+\frac{1}{2} \delta \theta_k^{\land}, I_3, I_3, I_3]
 \end{aligned}
-\end{gather*}
 $$
 
 So the covariance reset is:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & P_{reset} = J_k P_{k+1} J_k
 \end{aligned}
-\end{gather*}
 $$
 
 **Usually, this is close enough to identity because the $\theta$ covariance is small**
+
+#### Implementation
+
+```cpp
+// Predict
+template <typename S>
+bool ESKF<S>::Predict(const IMU& imu) {
+    ...
+    // TODO
+    // Left perturbation
+    Mat18T F = Mat18T::Identity();                                                 // Main diagonal
+    // Populate the matrix based on the given mathematical structure
+    F.template block<3, 3>(0, 3) = Mat3T::Identity() * dt;  // I * Δt for position to velocity
+
+    F.template block<3, 3>(3, 3) = Mat3T::Identity() * dt;  // I * Δt for velocity to velocity
+    F.template block<3, 3>(3, 6) = -SO3::hat(R_.matrix() * (imu.acce_ - ba_)) * dt;  // -(R(tilde{a} - b_a))^∧ Δt
+    F.template block<3, 3>(3, 12) = -(R_.matrix() * dt);  // -R * Δt for velocity to bias acceleration
+    F.template block<3, 3>(3, 15) = Mat3T::Identity() * dt;  // I * Δt for velocity to gravity
+    F.template block<3, 3>(6, 6) = Mat3T::Identity();  // -R * Δt for orientation to bias angular velocity
+    F.template block<3, 3>(6, 12) = -(R_.matrix() * dt);  // -R * Δt for orientation to bias angular velocity
+}
+
+void UpdateAndReset() {
+    p_ += dx_.template block<3, 1>(0, 0);
+    v_ += dx_.template block<3, 1>(3, 0);
+    // TODO: left perturbation
+    // R_ = R_ * SO3::exp(dx_.template block<3, 1>(6, 0));
+    R_ = SO3::exp(dx_.template block<3, 1>(6, 0)) * R_ ;
+    ...
+}
+
+void ProjectCov() {
+    Mat18T J = Mat18T::Identity();
+    // TODO
+    // J.template block<3, 3>(6, 6) = Mat3T::Identity() - 0.5 * SO3::hat(dx_.template block<3, 1>(6, 0));
+    J.template block<3, 3>(6, 6) = Mat3T::Identity() + 0.5 * SO3::hat(dx_.template block<3, 1>(6, 0));
+    cov_ = J * cov_ * J.transpose();
+}
+
+template <typename S>
+bool ESKF<S>::ObserveSE3(const SE3& pose, double trans_noise, double ang_noise) {
+    ...
+    innov.template head<3>() = (pose.translation() - p_);          // 平移部分
+    // TODO: left perturbation
+    innov.template tail<3>() = (pose.so3() * R_.inverse()).log();  // 旋转部分(3.67)
+    // innov.template tail<3>() = (R_.inverse() * pose.so3()).log();  // 旋转部分(3.67)
+}
+```
+Image:
+
+<div style="text-align: center;">
+    <p align="center">
+       <figure>
+            <img src="https://github.com/user-attachments/assets/9383183b-542d-41c4-b18e-7476e21fe23c" height="300" alt=""/>
+       </figure>
+    </p>
+</div>
+

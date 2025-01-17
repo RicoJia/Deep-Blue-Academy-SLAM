@@ -70,10 +70,13 @@ int main(int argc, char** argv) {
 
     io.SetIMUProcessFunc([&](const sad::IMU& imu) {
           /// IMU 处理函数
+          // This will only be True if StaticIMUInit::TryInit has done the calculation
+          // and returns True. (static_imu_init.cc)
           if (!imu_init.InitSuccess()) {
               imu_init.AddIMU(imu);
               return;
           }
+          // IMU is successful here.
 
           /// 需要IMU初始化
           if (!imu_inited) {

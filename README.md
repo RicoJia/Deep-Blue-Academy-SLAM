@@ -11,3 +11,4 @@ This repo is the course project collecion of the [Deep Blue Academy SLAM Course.
 - connect to vnc
 - Start terminal simulator. 
 - Go to `/home/rico`
+- Run binaries in directory: `/bin/<BINARY>`
