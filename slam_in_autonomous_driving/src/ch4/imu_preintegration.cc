@@ -65,6 +65,7 @@ void IMUPreintegration::Integrate(const IMU &imu, double dt) {
     dt_ += dt;
 }
 
+// Rico: dR_dbg_ has been pre-computed, because it's only dependent on IMU readings.
 SO3 IMUPreintegration::GetDeltaRotation(const Vec3d &bg) { return dR_ * SO3::exp(dR_dbg_ * (bg - bg_)); }
 
 Vec3d IMUPreintegration::GetDeltaVelocity(const Vec3d &bg, const Vec3d &ba) {
