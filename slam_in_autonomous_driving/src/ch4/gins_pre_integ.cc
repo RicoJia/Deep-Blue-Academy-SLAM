@@ -93,6 +93,7 @@ void GinsPreInteg::AddOdom(const sad::Odom& odom) {
     last_odom_set_ = true;
 }
 
+// Just optimize two frames. In GNSS triggered system, last_frame is updated with GNSS
 void GinsPreInteg::Optimize() {
     if (pre_integ_->dt_ < 1e-3) {
         // 未得到积分

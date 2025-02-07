@@ -121,6 +121,10 @@ class EdgeGyroRW : public g2o::BaseBinaryEdge<3, Vec3d, VertexGyroBias, VertexGy
     }
 };
 
+////////////////////////////////////////////////////////////////////////////////////////
+// Edges: They define errors, which are used in least square errors: sum(error^2)
+////////////////////////////////////////////////////////////////////////////////////////
+
 /**
  * 加计随机游走
  */
@@ -224,7 +228,7 @@ class EdgeGNSS : public g2o::BaseUnaryEdge<6, SE3, VertexPose> {
 
 /**
  * 只有平移的GNSS
- * 此时需要提供RTK外参 TBG，才能正确施加约束
+ * 此时需要提供RTK外参 TBG (T_{body, GNSS})，才能正确施加约束
  */
 class EdgeGNSSTransOnly : public g2o::BaseUnaryEdge<3, Vec3d, VertexPose> {
    public:
