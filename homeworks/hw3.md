@@ -40,7 +40,7 @@ r_{\Delta p_{ij}}(R_i^{\top} Exp(\phi)) := (R_i Exp(\phi))^{\top} \left( p_j - p
 = r_{\Delta p_{ij}} + [R_i^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right)]^{\land} \delta \phi
 
 \\ &
-\Rightarrow 
+\Rightarrow
 
 \\ &
 \frac{\partial r_{\Delta p_{ij}}}{\partial \boldsymbol{\phi}_i} =
@@ -50,4 +50,5 @@ r_{\Delta p_{ij}}(R_i^{\top} Exp(\phi)) := (R_i Exp(\phi))^{\top} \left( p_j - p
 \end{gather*}
 $$
 
-## [Question 2]
+## [Question 2] - Implement Pre-Integration Graph Optimization Triggered by Odom based on G2O
+

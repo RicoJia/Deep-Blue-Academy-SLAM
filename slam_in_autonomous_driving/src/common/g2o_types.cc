@@ -12,6 +12,10 @@ EdgePriorPoseNavState::EdgePriorPoseNavState(const NavStated& state, const Mat15
     setInformation(info);
 }
 
+/**
+ * 顶点顺序：pose, v, bg, ba
+ * 残差顺序：R, p, v, bg, ba，15维
+ */
 void EdgePriorPoseNavState::computeError() {
     auto* vp = dynamic_cast<const VertexPose*>(_vertices[0]);
     auto* vv = dynamic_cast<const VertexVelocity*>(_vertices[1]);

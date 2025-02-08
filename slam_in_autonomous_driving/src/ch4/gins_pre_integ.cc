@@ -151,6 +151,7 @@ void GinsPreInteg::Optimize() {
     optimizer.addVertex(v1_ba);
 
     // 预积分边
+    // Given the current bg, and ba, and we know the start and end time, calculate r_{delta R}, r_{delta P}, r_{delta V}
     auto edge_inertial = new EdgeInertial(pre_integ_, options_.gravity_);
     edge_inertial->setVertex(0, v0_pose);
     edge_inertial->setVertex(1, v0_vel);
@@ -176,7 +177,9 @@ void GinsPreInteg::Optimize() {
     edge_acc_rw->setInformation(options_.ba_rw_info_);
     optimizer.addEdge(edge_acc_rw);
 
-    // 上时刻先验
+    // 上时刻先验. it calculates err_r, err_p, etc. err_r = (last_pose.rotation^T * v0_pose).log()
+    // TODO: should this be new EdgePriorPoseNavState(*this_frame_, prior_info_)
+    // Oh no, it just measures the difference of the current and previous estimates of the vertices of the last frame.
     auto* edge_prior = new EdgePriorPoseNavState(*last_frame_, prior_info_);
     edge_prior->setVertex(0, v0_pose);
     edge_prior->setVertex(1, v0_vel);

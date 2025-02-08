@@ -89,6 +89,9 @@ class VertexAccBias : public VertexVelocity {
     VertexAccBias() {}
 };
 
+////////////////////////////////////////////////////////////////////////////////////////
+// Edges: They define errors, which are used in least square errors: sum(error^2)
+////////////////////////////////////////////////////////////////////////////////////////
 /**
  * 陀螺随机游走
  */
@@ -108,11 +111,13 @@ class EdgeGyroRW : public g2o::BaseBinaryEdge<3, Vec3d, VertexGyroBias, VertexGy
     }
 
     virtual void linearizeOplus() {
+        // j_xi * delta vg1
         _jacobianOplusXi = -Mat3d::Identity();
         _jacobianOplusXj.setIdentity();
     }
 
     Eigen::Matrix<double, 6, 6> GetHessian() {
+        // J = [J_i | J_j], H = J^T Omega J
         linearizeOplus();
         Eigen::Matrix<double, 3, 6> J;
         J.block<3, 3>(0, 0) = _jacobianOplusXi;
@@ -120,10 +125,6 @@ class EdgeGyroRW : public g2o::BaseBinaryEdge<3, Vec3d, VertexGyroBias, VertexGy
         return J.transpose() * information() * J;
     }
 };
-
-////////////////////////////////////////////////////////////////////////////////////////
-// Edges: They define errors, which are used in least square errors: sum(error^2)
-////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * 加计随机游走

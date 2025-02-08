@@ -14,6 +14,7 @@ EdgeInertial::EdgeInertial(std::shared_ptr<IMUPreintegration> preinteg, const Ve
     setInformation(preinteg->cov_.inverse() * weight);
 }
 
+// Given the current bg, and ba, and we know the start and end time, calculate r_{delta R}, r_{delta P}, r_{delta V}
 void EdgeInertial::computeError() {
     auto* p1 = dynamic_cast<const VertexPose*>(_vertices[0]);
     auto* v1 = dynamic_cast<const VertexVelocity*>(_vertices[1]);
