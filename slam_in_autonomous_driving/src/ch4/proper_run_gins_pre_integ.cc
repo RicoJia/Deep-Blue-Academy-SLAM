@@ -70,6 +70,8 @@ int main(int argc, char** argv) {
         ui->Init();
     }
 
+    //TODO
+    std::cout<<"Rico: Anybody hears me?"<<std::endl;
     /// 设置各类回调函数
     io.SetIMUProcessFunc([&](const sad::IMU& imu) {
           /// IMU 处理函数
@@ -110,11 +112,16 @@ int main(int argc, char** argv) {
             if (!imu_inited) {
                 return;
             }
+            //TODO
+            std::cout<<"Rico says 1"<<std::endl;
+
             sad::GNSS gnss_convert = gnss;
             if (!sad::ConvertGps2UTM(gnss_convert, antenna_pos, FLAGS_antenna_angle) || !gnss_convert.heading_valid_) {
                 return;
             }
 
+            //TODO
+            std::cout<<"Rico says 2"<<std::endl;
             /// 去掉原点
             if (!first_gnss_set) {
                 origin = gnss_convert.utm_pose_.translation();
@@ -122,6 +129,8 @@ int main(int argc, char** argv) {
             }
             gnss_convert.utm_pose_.translation() -= origin;
 
+            //TODO
+            std::cout<<"Rico says 3"<<std::endl;
             gins.AddGnss(gnss_convert);
 
             auto state = gins.GetState();
@@ -134,15 +143,11 @@ int main(int argc, char** argv) {
         })
         .SetOdomProcessFunc([&](const sad::Odom& odom) {
             imu_init.AddOdom(odom);
+            //TODO
+            std::cout<<"Rico says a"<<std::endl;
 
             if (imu_inited && gnss_inited) {
                 gins.AddOdom(odom);
-            }
-            auto state = gins.GetState();
-            save_result(fout, state);
-            if (ui) {
-                ui->UpdateNavState(state);
-                usleep(1e3);
             }
         })
         .Go();

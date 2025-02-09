@@ -98,6 +98,7 @@ class GinsPreInteg {
     double current_time_ = 0.0;  // 当前时间
 
     std::shared_ptr<IMUPreintegration> pre_integ_ = nullptr;
+    // NavState.h
     std::shared_ptr<NavStated> last_frame_ = nullptr;  // 上一个时刻状态
     std::shared_ptr<NavStated> this_frame_ = nullptr;  // 当前时刻状态
     Mat15d prior_info_ = Mat15d::Identity() * 1e2;     // 当前时刻先验
@@ -108,11 +109,16 @@ class GinsPreInteg {
 
     IMU last_imu_;    // 上时刻IMU
     Odom last_odom_;  // 上时刻odom
+    Odom this_odom_;  // 上时刻odom
     bool last_odom_set_ = false;
+
+    bool gnss_opt;  //?
+    bool odom_opt;  //?
 
     /// 标志位
     bool first_gnss_received_ = false;  // 是否已收到第一个gnss信号
     bool first_imu_received_ = false;   // 是否已收到第一个imu信号
+    bool first_odom_received_ = false;
 };
 }  // namespace sad
 

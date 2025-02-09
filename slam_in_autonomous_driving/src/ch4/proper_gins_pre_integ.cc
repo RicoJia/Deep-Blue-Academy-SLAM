@@ -49,20 +49,8 @@ void GinsPreInteg::SetOptions(sad::GinsPreInteg::Options options) {
     }
 }
 
-/**
- * @brief Odom-Triggered optimization is:
- 1. Wait for first GNSS:
-    - initialize this frame. Set p, R, bg, ba. Initialize v. 
- 2. Wait for first Odom.
- 3. Update GNSS:
-    - update last. update this
- * @param gnss 
- */
-
 void GinsPreInteg::AddGnss(const GNSS& gnss) {
-    // this frame is created here!!
     this_frame_ = std::make_shared<NavStated>(current_time_);
-    last_gnss_ = this_gnss_;
     this_gnss_ = gnss;
 
     if (!first_gnss_received_) {
@@ -70,8 +58,9 @@ void GinsPreInteg::AddGnss(const GNSS& gnss) {
             // 要求首个GNSS必须有航向
             return;
         }
+
         // 首个gnss信号，将初始pose设置为该gnss信号
-        // this_frame_->timestamp_ = gnss.unix_time_;
+        this_frame_->timestamp_ = gnss.unix_time_;
         this_frame_->p_ = gnss.utm_pose_.translation();
         this_frame_->R_ = gnss.utm_pose_.so3();
         this_frame_->v_.setZero();
@@ -86,73 +75,22 @@ void GinsPreInteg::AddGnss(const GNSS& gnss) {
         current_time_ = gnss.unix_time_;
         return;
     }
+
     // 积分到GNSS时刻
-    // pre_integ_->Integrate(last_imu_, gnss.unix_time_ - current_time_);
-    // current_time_ = gnss.unix_time_;
-    // *this_frame_ = pre_integ_->Predict(*last_frame_, options_.gravity_);
-    // Optimize();
-    // last_frame_ = this_frame_;
-    // last_gnss_ = this_gnss_;
-}
+    pre_integ_->Integrate(last_imu_, gnss.unix_time_ - current_time_);
 
-/**
- * @brief : The overarching algorithm is we update the current 
- key frame's P and R in gnss, but v in this frame.
- * 
- */
-void GinsPreInteg::AddOdom(const sad::Odom& odom) {
-    //TODO
-//     std::cout<<"1"<<std::endl;
-    this_frame_ = std::make_shared<NavStated>(current_time_);
-    this_odom_ = odom;
-
-//     // //TODO
-    std::cout<<"2"<<std::endl;
-    auto odom_vel_world = [&](){
-        double velo_l = options_.wheel_radius_ * odom.left_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
-        double velo_r =
-            options_.wheel_radius_ * odom.right_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
-        double average_vel = 0.5 * (velo_l + velo_r);
-        Vec3d odom_world = last_frame_ -> R_ * Vec3d(average_vel, 0, 0);
-        return odom_world;
-    };
-
-    if (!first_odom_received_ && first_gnss_received_){
-        // 首个gnss信号，将初始pose设置为该gnss信号
-        //TODO
-        std::cout<<"3"<<std::endl;
-        if (!this_frame_)  this_frame_ = std::make_shared<NavStated>(current_time_);
-        this_frame_->timestamp_ = odom.timestamp_;
-        
-        this_frame_->v_ = odom_vel_world();
-        // this_frame_->bg_ = options_.preinteg_options_.init_bg_;
-        // this_frame_->ba_ = options_.preinteg_options_.init_ba_;
-
-        pre_integ_ = std::make_shared<IMUPreintegration>(options_.preinteg_options_);
-        //TODO
-        std::cout<<"4"<<std::endl;
-        last_frame_ = this_frame_;
-        last_odom_ = this_odom_;
-        first_odom_received_ = true;
-        current_time_ = odom.timestamp_;
-        return;
-    }
-
-    pre_integ_->Integrate(last_imu_, odom.timestamp_ - current_time_);
-
-    current_time_ = odom.timestamp_;
+    current_time_ = gnss.unix_time_;
     *this_frame_ = pre_integ_->Predict(*last_frame_, options_.gravity_);
 
-    odom_opt = true;
-    //TODO
-    std::cout<<"5"<<std::endl;
     Optimize();
 
+    last_frame_ = this_frame_;
+    last_gnss_ = this_gnss_;
+}
+
+void GinsPreInteg::AddOdom(const sad::Odom& odom) {
     last_odom_ = odom;
     last_odom_set_ = true;
-    last_frame_ = this_frame_;
-    // //TODO
-    std::cout<<"6"<<std::endl;
 }
 
 // Just optimize two frames. In GNSS triggered system, last_frame is updated with GNSS
