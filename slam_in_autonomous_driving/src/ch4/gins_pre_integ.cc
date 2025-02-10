@@ -62,7 +62,6 @@ void GinsPreInteg::SetOptions(sad::GinsPreInteg::Options options) {
 void GinsPreInteg::AddGnss(const GNSS& gnss) {
     // this frame is created here!!
     this_frame_ = std::make_shared<NavStated>(current_time_);
-    last_gnss_ = this_gnss_;
     this_gnss_ = gnss;
 
     if (!first_gnss_received_) {
@@ -71,7 +70,7 @@ void GinsPreInteg::AddGnss(const GNSS& gnss) {
             return;
         }
         // 首个gnss信号，将初始pose设置为该gnss信号
-        // this_frame_->timestamp_ = gnss.unix_time_;
+        this_frame_->timestamp_ = gnss.unix_time_;
         this_frame_->p_ = gnss.utm_pose_.translation();
         this_frame_->R_ = gnss.utm_pose_.so3();
         this_frame_->v_.setZero();
@@ -87,13 +86,23 @@ void GinsPreInteg::AddGnss(const GNSS& gnss) {
         return;
     }
     // 积分到GNSS时刻
-    // pre_integ_->Integrate(last_imu_, gnss.unix_time_ - current_time_);
-    // current_time_ = gnss.unix_time_;
-    // *this_frame_ = pre_integ_->Predict(*last_frame_, options_.gravity_);
-    // Optimize();
-    // last_frame_ = this_frame_;
-    // last_gnss_ = this_gnss_;
+    pre_integ_->Integrate(last_imu_, gnss.unix_time_ - current_time_);
+    current_time_ = gnss.unix_time_;
+    *this_frame_ = pre_integ_->Predict(*last_frame_, options_.gravity_);
+    gnss_opt = true;
+    Optimize();
+    last_frame_ = this_frame_;
+    last_gnss_ = this_gnss_;
 }
+
+Vec3d GinsPreInteg::odom_vel_world(const sad::Odom& odom, std::shared_ptr<NavStated> frame) const{
+    double velo_l = options_.wheel_radius_ * odom.left_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
+    double velo_r =
+        options_.wheel_radius_ * odom.right_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
+    double average_vel = 0.5 * (velo_l + velo_r);
+    Vec3d odom_world = frame -> R_ * Vec3d(average_vel, 0, 0);
+    return odom_world;
+};
 
 /**
  * @brief : The overarching algorithm is we update the current 
@@ -101,36 +110,24 @@ void GinsPreInteg::AddGnss(const GNSS& gnss) {
  * 
  */
 void GinsPreInteg::AddOdom(const sad::Odom& odom) {
-    //TODO
-//     std::cout<<"1"<<std::endl;
-    this_frame_ = std::make_shared<NavStated>(current_time_);
-    this_odom_ = odom;
+    // We wait for the first GNSS to come. Not the best, but easy
+    if (!first_gnss_received_) return;
 
-//     // //TODO
-    std::cout<<"2"<<std::endl;
-    auto odom_vel_world = [&](){
-        double velo_l = options_.wheel_radius_ * odom.left_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
-        double velo_r =
-            options_.wheel_radius_ * odom.right_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
-        double average_vel = 0.5 * (velo_l + velo_r);
-        Vec3d odom_world = last_frame_ -> R_ * Vec3d(average_vel, 0, 0);
-        return odom_world;
-    };
+    // creating a current frame from the last frame
+    // Setting odom, flags for optimization
+    // this_frame_ = std::make_shared<NavStated>(current_time_);
+    this_frame_ = std::make_shared<NavStated>(*last_frame_);
+    this_frame_->timestamp_ = current_time_;
+    this_odom_ = odom;
 
     if (!first_odom_received_ && first_gnss_received_){
         // 首个gnss信号，将初始pose设置为该gnss信号
         //TODO
         std::cout<<"3"<<std::endl;
-        if (!this_frame_)  this_frame_ = std::make_shared<NavStated>(current_time_);
         this_frame_->timestamp_ = odom.timestamp_;
-        
-        this_frame_->v_ = odom_vel_world();
-        // this_frame_->bg_ = options_.preinteg_options_.init_bg_;
-        // this_frame_->ba_ = options_.preinteg_options_.init_ba_;
+        this_frame_->v_ = odom_vel_world(odom, this_frame_);
 
         pre_integ_ = std::make_shared<IMUPreintegration>(options_.preinteg_options_);
-        //TODO
-        std::cout<<"4"<<std::endl;
         last_frame_ = this_frame_;
         last_odom_ = this_odom_;
         first_odom_received_ = true;
@@ -144,21 +141,17 @@ void GinsPreInteg::AddOdom(const sad::Odom& odom) {
     *this_frame_ = pre_integ_->Predict(*last_frame_, options_.gravity_);
 
     odom_opt = true;
-    //TODO
-    std::cout<<"5"<<std::endl;
     Optimize();
 
     last_odom_ = odom;
     last_odom_set_ = true;
     last_frame_ = this_frame_;
-    // //TODO
-    std::cout<<"6"<<std::endl;
 }
 
 // Just optimize two frames. In GNSS triggered system, last_frame is updated with GNSS
 void GinsPreInteg::Optimize() {
-    if (pre_integ_->dt_ < 1e-3) {
-        // 未得到积分
+    if (pre_integ_->dt_ < 1e-2) {
+        // 未得到积分. Increased time intervals so gnss and odom are not too close to each other 
         return;
     }
 
@@ -197,11 +190,6 @@ void GinsPreInteg::Optimize() {
     v1_pose->setEstimate(this_frame_->GetSE3());
     optimizer.addVertex(v1_pose);
 
-    auto v1_vel = new VertexVelocity();
-    v1_vel->setId(5);
-    v1_vel->setEstimate(this_frame_->v_);
-    optimizer.addVertex(v1_vel);
-
     auto v1_bg = new VertexGyroBias();
     v1_bg->setId(6);
     v1_bg->setEstimate(this_frame_->bg_);
@@ -211,6 +199,11 @@ void GinsPreInteg::Optimize() {
     v1_ba->setId(7);
     v1_ba->setEstimate(this_frame_->ba_);
     optimizer.addVertex(v1_ba);
+
+    auto v1_vel = new VertexVelocity();
+    v1_vel->setId(5);
+    v1_vel->setEstimate(this_frame_->v_);
+    optimizer.addVertex(v1_vel);
 
     // 预积分边
     // Given the current bg, and ba, and we know the start and end time, calculate r_{delta R}, r_{delta P}, r_{delta V}
@@ -249,55 +242,60 @@ void GinsPreInteg::Optimize() {
     edge_prior->setVertex(3, v0_ba);
     optimizer.addEdge(edge_prior);
 
-    // GNSS边
-    auto edge_gnss0 = new EdgeGNSS(v0_pose, last_gnss_.utm_pose_);
-    edge_gnss0->setInformation(options_.gnss_info_);
-    optimizer.addEdge(edge_gnss0);
+    // Rico: Here, you either add an GNSS edge, or an Odom edge. There is no 
+    // need to add both for a single frame
+    if (gnss_opt){
 
-    auto edge_gnss1 = new EdgeGNSS(v1_pose, this_gnss_.utm_pose_);
-    edge_gnss1->setInformation(options_.gnss_info_);
-    optimizer.addEdge(edge_gnss1);
+        // GNSS边
+        auto edge_gnss0 = new EdgeGNSS(v0_pose, last_gnss_.utm_pose_);
+        edge_gnss0->setInformation(options_.gnss_info_);
+        optimizer.addEdge(edge_gnss0);
 
-    // Odom边
-    EdgeEncoder3D* edge_odom = nullptr;
-    Vec3d vel_world = Vec3d::Zero();
-    Vec3d vel_odom = Vec3d::Zero();
-    if (last_odom_set_) {
-        // velocity obs
-        double velo_l =
-            options_.wheel_radius_ * last_odom_.left_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
-        double velo_r =
-            options_.wheel_radius_ * last_odom_.right_pulse_ / options_.circle_pulse_ * 2 * M_PI / options_.odom_span_;
-        double average_vel = 0.5 * (velo_l + velo_r);
-        vel_odom = Vec3d(average_vel, 0.0, 0.0);
-        vel_world = this_frame_->R_ * vel_odom;
+        auto edge_gnss1 = new EdgeGNSS(v1_pose, this_gnss_.utm_pose_);
+        edge_gnss1->setInformation(options_.gnss_info_);
+        optimizer.addEdge(edge_gnss1);
+        gnss_opt = false;
+    } else if (odom_opt){
+        // Odom边
+        Vec3d vel_world0 = odom_vel_world(last_odom_, last_frame_);
+        Vec3d vel_world1 = odom_vel_world(this_odom_, this_frame_);
 
-        edge_odom = new EdgeEncoder3D(v1_vel, vel_world);
-        edge_odom->setInformation(options_.odom_info_);
-        optimizer.addEdge(edge_odom);
+        auto v0_vel = new VertexVelocity();
+        v0_vel->setId(5);
+        v0_vel->setEstimate(last_frame_->v_);
+        optimizer.addVertex(v0_vel);
 
-        // 重置odom数据到达标志位，等待最新的odom数据
-        last_odom_set_ = false;
+        EdgeEncoder3D* edge_odom0 = nullptr;
+        edge_odom0 = new EdgeEncoder3D(v0_vel, vel_world0);
+        edge_odom0->setInformation(options_.odom_info_);
+        optimizer.addEdge(edge_odom0);
+        EdgeEncoder3D* edge_odom1 = nullptr;
+        edge_odom1 = new EdgeEncoder3D(v1_vel, vel_world1);
+        edge_odom1->setInformation(options_.odom_info_);
+        optimizer.addEdge(edge_odom1);
+
+        odom_opt = false;
     }
+
 
     optimizer.setVerbose(options_.verbose_);
     optimizer.initializeOptimization();
     optimizer.optimize(20);
 
-    if (options_.verbose_) {
-        // 获取结果，统计各类误差
-        LOG(INFO) << "chi2/error: ";
-        LOG(INFO) << "preintegration: " << edge_inertial->chi2() << "/" << edge_inertial->error().transpose();
-        // LOG(INFO) << "gnss0: " << edge_gnss0->chi2() << ", " << edge_gnss0->error().transpose();
-        LOG(INFO) << "gnss1: " << edge_gnss1->chi2() << ", " << edge_gnss1->error().transpose();
-        LOG(INFO) << "bias: " << edge_gyro_rw->chi2() << "/" << edge_acc_rw->error().transpose();
-        LOG(INFO) << "prior: " << edge_prior->chi2() << "/" << edge_prior->error().transpose();
-        if (edge_odom) {
-            LOG(INFO) << "body vel: " << (v1_pose->estimate().so3().inverse() * v1_vel->estimate()).transpose();
-            LOG(INFO) << "meas: " << vel_odom.transpose();
-            LOG(INFO) << "odom: " << edge_odom->chi2() << "/" << edge_odom->error().transpose();
-        }
-    }
+    // if (options_.verbose_) {
+    //     // 获取结果，统计各类误差
+    //     LOG(INFO) << "chi2/error: ";
+    //     LOG(INFO) << "preintegration: " << edge_inertial->chi2() << "/" << edge_inertial->error().transpose();
+    //     // LOG(INFO) << "gnss0: " << edge_gnss0->chi2() << ", " << edge_gnss0->error().transpose();
+    //     LOG(INFO) << "gnss1: " << edge_gnss1->chi2() << ", " << edge_gnss1->error().transpose();
+    //     LOG(INFO) << "bias: " << edge_gyro_rw->chi2() << "/" << edge_acc_rw->error().transpose();
+    //     LOG(INFO) << "prior: " << edge_prior->chi2() << "/" << edge_prior->error().transpose();
+    //     if (edge_odom) {
+    //         LOG(INFO) << "body vel: " << (v1_pose->estimate().so3().inverse() * v1_vel->estimate()).transpose();
+    //         LOG(INFO) << "meas: " << vel_odom.transpose();
+    //         LOG(INFO) << "odom: " << edge_odom->chi2() << "/" << edge_odom->error().transpose();
+    //     }
+    // }
 
     last_frame_->R_ = v0_pose->estimate().so3();
     last_frame_->p_ = v0_pose->estimate().translation();

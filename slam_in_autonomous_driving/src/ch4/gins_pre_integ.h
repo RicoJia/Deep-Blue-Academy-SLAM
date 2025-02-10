@@ -90,6 +90,8 @@ class GinsPreInteg {
      */
     NavStated GetState() const;
 
+    Vec3d odom_vel_world(const sad::Odom& odom, std::shared_ptr<NavStated> frame) const;
+
    private:
     // 优化
     void Optimize();
@@ -112,8 +114,8 @@ class GinsPreInteg {
     Odom this_odom_;  // 上时刻odom
     bool last_odom_set_ = false;
 
-    bool gnss_opt;  //?
-    bool odom_opt;  //?
+    bool gnss_opt = false;  //?
+    bool odom_opt = false;  //?
 
     /// 标志位
     bool first_gnss_received_ = false;  // 是否已收到第一个gnss信号
