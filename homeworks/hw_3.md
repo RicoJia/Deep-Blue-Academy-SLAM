@@ -9,45 +9,33 @@
 Prove:
 
 $$
-\begin{gather*}
 \begin{aligned}
 & \frac{\partial r_{\Delta p_{ij}}}{\partial \boldsymbol{\phi}_i} =
 \left( \mathbf{R}_i^\top \left( \mathbf{p}_j - \mathbf{p}_i - \mathbf{v}_i \Delta t_{ij} - \frac{1}{2} \mathbf{g} \Delta t_{ij}^2 \right) \right)^\wedge.
 \end{aligned}
-\end{gather*}
 $$
 
 ### Proof
 
 $$
-\begin{gather*}
 \begin{aligned}
 & r_{\Delta p_{ij}} := R_i^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right) - \Delta \tilde{p}_{ij}.
-
 \\ &
 \Rightarrow \text{Applying right perturbation on } R_i
-
 \\ &
 r_{\Delta p_{ij}}(R_i^{\top} Exp(\phi)) := (R_i Exp(\phi))^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right) - \Delta \tilde{p}_{ij}.
-
 \\ &
 \approx (I - \delta \phi^{\land}) R_i^{\top}  \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right) - \Delta \tilde{p}_{ij}.
-
 \\ &
 = (R_i^{\top}  \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right) - \Delta \tilde{p}_{ij}) - \delta \phi^{\land} R_i^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right)
-
 \\ &
 = r_{\Delta p_{ij}} + [R_i^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right)]^{\land} \delta \phi
-
 \\ &
 \Rightarrow
-
 \\ &
 \frac{\partial r_{\Delta p_{ij}}}{\partial \boldsymbol{\phi}_i} =
 \left( \mathbf{R}_i^\top \left( \mathbf{p}_j - \mathbf{p}_i - \mathbf{v}_i \Delta t_{ij} - \frac{1}{2} \mathbf{g} \Delta t_{ij}^2 \right) \right)^\wedge.
-
 \end{aligned}
-\end{gather*}
 $$
 
 ## [Question 2] - Implement Pre-Integration Graph Optimization Triggered by Odom based on G2O
@@ -89,6 +77,8 @@ Upon receiving a new GNSS or odom update:
 [Here is a more comprehensive list of edges and vertices associated](https://ricojia.github.io/2024/03/24/robotics-imu-preintegration-optimization-implementation/)
 
 ### Here is the final result
+
+Sorry, you have to paste it in your browser to view
 
 <div style="text-align: center;">
     <p align="center">
@@ -370,3 +360,104 @@ void GinsPreInteg::Optimize() {
 }
 ```
 
+## [Question 3] - Show The Correctness of Jacobians of Residuals Calculating Using The Auto Differentiation Functionality in G2O
+
+So the Jacobians in question, are the ones defined here:
+
+$$
+\begin{aligned}
+\frac{\partial r_{\Delta p_{ij}}}{\partial p_i} &= - R_i^{\top}, \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial p_j} &= R_i^{\top}, \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial v_i} &= - R_i^{\top} \Delta t_{ij}, \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial \phi_i} &= \left( R_i^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right) \right)^{\wedge}.  \\
+\frac{\partial r_{\Delta v_{i,j}}}{\partial b_{a,i}} &= \sum_{k=i}^{j-1} \Delta \tilde{R}_{ik} \Delta t, \\
+\frac{\partial r_{\Delta v_{i,j}}}{\partial b_{g,i}} &= \sum_{k=i}^{j-1} \Delta \tilde{R}_{ik} \left( \tilde{a}_k - b_{a,i} \right)^{\wedge} \frac{\partial \Delta \tilde{R}_{ik}}{\partial b_{g,i}} \Delta t. \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial p_i} &= - R_i^{\top}, \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial p_j} &= R_i^{\top}, \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial v_i} &= - R_i^{\top} \Delta t_{ij}, \\
+\frac{\partial r_{\Delta p_{ij}}}{\partial \phi_i} &= \left( R_i^{\top} \left( p_j - p_i - v_i \Delta t_{ij} - \frac{1}{2} g \Delta t_{ij}^2 \right) \right)^{\wedge}.
+\\
+\dots
+\end{aligned}
+$$
+
+To test to see if they are correct, we just need to comment out the overriding function `void EdgeInertial::linearizeOplus()`. This will enable automatic differentiation. 
+
+```cpp
+// gins_pre_integ.cc
+void GinsPreInteg::Optimize() {
+    ...
+    // At the end of the function
+    edge_inertial->checkJacobians();  // 第三题
+}
+
+// g2o_types.cc
+void EdgeInertial::checkJacobians() {
+    linearizeOplus();
+
+    auto* p1 = dynamic_cast<const VertexPose*>(_vertices[0]);
+    auto* v1 = dynamic_cast<const VertexVelocity*>(_vertices[1]);
+    auto* bg1 = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
+    auto* ba1 = dynamic_cast<const VertexAccBias*>(_vertices[3]);
+    auto* p2 = dynamic_cast<const VertexPose*>(_vertices[4]);
+    auto* v2 = dynamic_cast<const VertexVelocity*>(_vertices[5]);
+
+    Vec3d bg = bg1->estimate();
+    Vec3d ba = ba1->estimate();
+    Vec3d dbg = bg - preint_->bg_;
+
+    // 一些中间符号
+    const SO3 R1 = p1->estimate().so3();
+    const SO3 R1T = R1.inverse();
+    const SO3 R2 = p2->estimate().so3();
+
+    auto dR_dbg = preint_->dR_dbg_;
+    auto dv_dbg = preint_->dV_dbg_;
+    auto dp_dbg = preint_->dP_dbg_;
+    auto dv_dba = preint_->dV_dba_;
+    auto dp_dba = preint_->dP_dba_;
+
+    // 估计值
+    Vec3d vi = v1->estimate();
+    Vec3d vj = v2->estimate();
+    Vec3d pi = p1->estimate().translation();
+    Vec3d pj = p2->estimate().translation();
+
+    const SO3 dR = preint_->GetDeltaRotation(bg);
+    const SO3 eR = SO3(dR).inverse() * R1T * R2;
+    const Vec3d er = eR.log();
+    const Mat3d invJr = SO3::jr_inv(eR); // 雅可比
+
+    Eigen::Matrix3d dR_dR1 = -invJr * (R2.inverse() * R1).matrix();
+    Eigen::Matrix3d dv_dR1 = SO3::hat(R1T * (vj - vi - grav_ * dt_));
+    Eigen::Matrix3d dp_dR1 = SO3::hat(R1T * (pj - pi - v1->estimate() * dt_ - 0.5 * grav_ * dt_ * dt_));
+    Eigen::Matrix3d dp_dp1 = -R1T.matrix();
+    Eigen::Matrix3d dv_dv1 = -R1T.matrix();
+    Eigen::Matrix3d dp_dv1 = -R1T.matrix() * dt_;
+    Eigen::Matrix3d dR_dbg1 = -invJr * eR.inverse().matrix() * SO3::jr((dR_dbg * dbg).eval()) * dR_dbg;
+    Eigen::Matrix3d dv_dbg1 = -dv_dbg;
+    Eigen::Matrix3d dp_dbg1 = -dp_dbg;
+    Eigen::Matrix3d dv_dba1 = -dv_dba;
+    Eigen::Matrix3d dp_dba1 = -dp_dba;
+    Eigen::Matrix3d dr_dr2 = invJr;
+    Eigen::Matrix3d dp_dp2 = R1T.matrix();
+    Eigen::Matrix3d dv_dv2 = R1T.matrix(); 
+
+    LOG(INFO) << "dR_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(0, 0) - dR_dR1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dv_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(3, 0) - dv_dR1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dp_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(6, 0) - dp_dR1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dp_dp1 diff: " << (_jacobianOplus[0].block<3, 3>(6, 3) - dp_dp1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dv_dv1 diff: " << (_jacobianOplus[1].block<3, 3>(3, 0) - dv_dv1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dp_dv1 diff: " << (_jacobianOplus[1].block<3, 3>(6, 0) - dp_dv1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dR_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(0, 0) - dR_dbg1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dv_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(3, 0) - dv_dbg1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dp_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(6, 0) - dp_dbg1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dv_dba1 diff: " << (_jacobianOplus[3].block<3, 3>(3, 0) - dv_dba1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dp_dba1 diff: " << (_jacobianOplus[3].block<3, 3>(6, 0) - dp_dba1).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dr_dr2 diff: " << (_jacobianOplus[4].block<3, 3>(0, 0) - dr_dr2).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dp_dp2 diff: " << (_jacobianOplus[4].block<3, 3>(6, 3) - dp_dp2).lpNorm<Eigen::Infinity>();
+    LOG(INFO) << "dv_dv2 diff: " << (_jacobianOplus[5].block<3, 3>(3, 0) - dv_dv2).lpNorm<Eigen::Infinity>();
+};
+```
+
+We can see that the final differences are in the order of $10^{-7}$!

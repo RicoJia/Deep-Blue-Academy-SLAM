@@ -313,6 +313,9 @@ void GinsPreInteg::Optimize() {
     options_.preinteg_options_.init_bg_ = this_frame_->bg_;
     options_.preinteg_options_.init_ba_ = this_frame_->ba_;
     pre_integ_ = std::make_shared<IMUPreintegration>(options_.preinteg_options_);
+
+    edge_inertial->checkJacobians();  // 第三题
+
 }
 
 NavStated GinsPreInteg::GetState() const {
