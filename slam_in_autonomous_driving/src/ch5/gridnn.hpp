@@ -77,6 +77,7 @@ class GridNN {
     float inv_resolution_ = 10.0;  // 分辨率倒数
 
     NearbyType nearby_type_ = NearbyType::NEARBY4;
+    // <Eigen::Matrix<int, dim, 1>, >
     std::unordered_map<KeyType, std::vector<size_t>, hash_vec<dim>> grids_;  //  栅格数据
     CloudPtr cloud_;
 
