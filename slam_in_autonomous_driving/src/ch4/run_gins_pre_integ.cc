@@ -16,7 +16,7 @@
 /**
  * 运行由预积分构成的GINS系统
  */
-DEFINE_string(txt_path, "./data/ch3/10.txt", "数据文件路径");
+DEFINE_string(txt_path, "../data/ch3/10.txt", "数据文件路径");
 DEFINE_double(antenna_angle, 12.06, "RTK天线安装偏角（角度）");
 DEFINE_double(antenna_pox_x, -0.17, "RTK天线安装偏移X");
 DEFINE_double(antenna_pox_y, -0.20, "RTK天线安装偏移Y");
@@ -110,7 +110,6 @@ int main(int argc, char** argv) {
             if (!imu_inited) {
                 return;
             }
-
             sad::GNSS gnss_convert = gnss;
             if (!sad::ConvertGps2UTM(gnss_convert, antenna_pos, FLAGS_antenna_angle) || !gnss_convert.heading_valid_) {
                 return;
@@ -138,6 +137,12 @@ int main(int argc, char** argv) {
 
             if (imu_inited && gnss_inited) {
                 gins.AddOdom(odom);
+            }
+            auto state = gins.GetState();
+            save_result(fout, state);
+            if (ui) {
+                ui->UpdateNavState(state);
+                usleep(1e3);
             }
         })
         .Go();

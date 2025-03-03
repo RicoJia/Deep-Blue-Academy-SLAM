@@ -31,6 +31,8 @@ bool KdTree::BuildTree(const CloudPtr &cloud) {
     }
 
     Insert(idx, root_.get());
+    //TODO
+    std::cout<<"size_: "<<size_<<std::endl;
     return true;
 }
 
@@ -48,6 +50,8 @@ void KdTree::Insert(const IndexVec &points, KdTreeNode *node) {
     }
 
     IndexVec left, right;
+    // if right is not empty but left is (when all coords along dim are the same)
+    // then we return here?? that doesn't make sense.
     if (!FindSplitAxisAndThresh(points, node->axis_index_, node->split_thresh_, left, right)) {
         size_++;
         node->point_idx_ = points[0];

@@ -104,6 +104,7 @@ bool GridNN<dim>::SetPointCloud(CloudPtr cloud) {
     return true;
 }
 
+// This basically makes 3D points fall into the same grid cell if they have the same x and y and z coordinates.
 template <int dim>
 Eigen::Matrix<int, dim, 1> GridNN<dim>::Pos2Grid(const Eigen::Matrix<float, dim, 1>& pt) {
     return pt.array().template round().template cast<int>();

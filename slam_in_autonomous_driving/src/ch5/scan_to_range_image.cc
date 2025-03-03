@@ -13,11 +13,14 @@
 using PointType = pcl::PointXYZI;
 using PointCloudType = pcl::PointCloud<PointType>;
 
+// These are gflags. At the end of it there's a description
 DEFINE_string(pcd_path, "./data/ch5/scan_example.pcd", "点云文件路径");
 DEFINE_double(azimuth_resolution_deg, 0.3, "方位角分辨率（度）");
 DEFINE_int32(elevation_rows, 16, "俯仰角对应的行数");
 DEFINE_double(elevation_range, 15.0, "俯仰角范围");  // VLP-16 上下各15度范围
 DEFINE_double(lidar_height, 1.128, "雷达安装高度");
+
+// 16 line lidar
 
 void GenerateRangeImage(PointCloudType::Ptr cloud) {
     int image_cols = int(360 / FLAGS_azimuth_resolution_deg);  // 水平为360度，按分辨率切分即可
@@ -47,6 +50,7 @@ void GenerateRangeImage(PointCloudType::Ptr cloud) {
         }
     }
 
+    // Before flipping, elevation = 0, y = 0, and that's the top row
     // 沿Y轴翻转，因为我们希望Z轴朝上时Y朝上
     cv::Mat image_flipped;
     cv::flip(image, image_flipped, 0);

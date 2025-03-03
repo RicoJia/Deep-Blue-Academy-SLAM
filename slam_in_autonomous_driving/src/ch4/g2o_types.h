@@ -39,7 +39,7 @@ class EdgeInertial : public g2o::BaseMultiEdge<9, Vec9d> {
     bool write(std::ostream& os) const override { return false; }
 
     void computeError() override;
-    void linearizeOplus() override;
+    // void linearizeOplus() override;
 
     Eigen::Matrix<double, 24, 24> GetHessian() {
         linearizeOplus();
@@ -52,6 +52,8 @@ class EdgeInertial : public g2o::BaseMultiEdge<9, Vec9d> {
         J.block<9, 3>(0, 21) = _jacobianOplus[5];
         return J.transpose() * information() * J;
     }
+
+    void checkJacobians();
 
    private:
     const double dt_;
