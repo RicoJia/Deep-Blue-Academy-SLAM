@@ -9,8 +9,8 @@
 #include "ch6/lidar_2d_utils.h"
 #include "common/io_utils.h"
 
-DEFINE_string(bag_path, "./dataset/sad/2dmapping/floor1.bag", "数据包路径");
-DEFINE_string(method, "point2point", "2d icp方法：point2point/point2plane");
+DEFINE_string(bag_path, "./data/2dmapping/floor1.bag", "数据包路径");
+DEFINE_string(method, "point2plane", "2d icp方法：point2point/point2plane");
 
 /// 测试从rosbag中读取2d scan并plot的结果
 /// 通过选择method来确定使用点到点或点到面的ICP
@@ -48,10 +48,11 @@ int main(int argc, char** argv) {
                              cv::Mat image;
                              sad::Visualize2DScan(last_scan, SE2(), image, Vec3b(255, 0, 0));    // target是蓝的
                              sad::Visualize2DScan(current_scan, pose, image, Vec3b(0, 0, 255));  // source是红的
+                             sad::Visualize2DScan(current_scan, SE2(), image, Vec3b(0, 255, 255));  // source是红的
                              cv::imshow("scan", image);
-                             cv::waitKey(20);
+                             cv::waitKey(0);
 
-                             last_scan = current_scan;
+                            //  last_scan = current_scan;
                              return true;
                          })
         .Go();
