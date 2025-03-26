@@ -84,7 +84,9 @@ bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
         cv::imshow("global map", ShowGlobalMap());
     }
 
-    cv::waitKey(10);
+    // TODO test code
+    // cv::waitKey(10);
+    cv::waitKey(0);
 
     if (last_frame_) {
         motion_guess_ = last_frame_->pose_.inverse() * current_frame_->pose_;
@@ -208,6 +210,7 @@ cv::Mat Mapping2D::ShowGlobalMap(int max_size) {
         }
     }
 
+    // TODO: what if this point shows up on different map?
     std::for_each(std::execution::par_unseq, render_data.begin(), render_data.end(), [&](const Vec2i& xy) {
         int x = xy[0], y = xy[1];
         Vec2f pw = (Vec2f(x, y) - center_image) / global_map_resolution + c;  // 世界坐标

@@ -31,6 +31,7 @@ void LoopClosing::AddFinishedSubmap(std::shared_ptr<Submap> submap) {
 
 void LoopClosing::AddNewSubmap(std::shared_ptr<Submap> submap) {
     submaps_.emplace(submap->GetId(), submap);
+    // TODO: this is current_submap_id, really
     last_submap_id_ = submap->GetId();
 }
 

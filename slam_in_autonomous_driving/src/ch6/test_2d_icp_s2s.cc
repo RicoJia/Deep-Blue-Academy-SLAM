@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
                              cv::Mat image;
                              sad::Visualize2DScan(last_scan, SE2(), image, Vec3b(255, 0, 0));    // target是蓝的
                              sad::Visualize2DScan(current_scan, pose, image, Vec3b(0, 0, 255));  // source是红的
-                             sad::Visualize2DScan(current_scan, SE2(), image, Vec3b(0, 255, 255));  // source是红的
+                             sad::Visualize2DScan(current_scan, SE2(), image, Vec3b(0, 255, 255));  // unmatched source是yellow
                              cv::imshow("scan", image);
                              cv::waitKey(0);
 

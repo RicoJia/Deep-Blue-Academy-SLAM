@@ -164,6 +164,7 @@ bool MRLikelihoodField::AlignInLevel(int level, SE2& init_pose) {
         chi2[i] = edges[i]->chi2();
     }
 
+    // Why sorting them?
     std::sort(chi2.begin(), chi2.end());
 
     /// 要求inlier比例超过一定值

@@ -207,6 +207,7 @@ bool LikelihoodField::AlignG2O(SE2& init_pose) {
 }
 
 void LikelihoodField::SetFieldImageFromOccuMap(const cv::Mat& occu_map) {
+    // TODO: why do we need image border?
     const int boarder = 25;
     field_ = cv::Mat(1000, 1000, CV_32F, 30.0);
 

@@ -45,6 +45,18 @@ void TxtIO::Go() {
             bool heading_valid;
             ss >> time >> lat >> lon >> alt >> heading >> heading_valid;
             gnss_proc_(GNSS(time, 4, Vec3d(lat, lon, alt), heading, heading_valid));
+        }   else if (data_type == "LIDAR" && lidar_proc_) {
+            // Expected format: LIDAR <time> <num_points> <x1> <y1> ... <xn> <yn>
+            double time;
+            int num_points;
+            ss >> time >> num_points;
+            std::vector<Vec2d> points;
+            for (int i = 0; i < num_points; ++i) {
+                double x, y;
+                ss >> x >> y;
+                points.emplace_back(x, y);
+            }
+            lidar_proc_(Lidar(time, points));
         }
     }
 

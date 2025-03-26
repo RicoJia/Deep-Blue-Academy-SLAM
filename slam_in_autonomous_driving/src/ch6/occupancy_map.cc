@@ -142,7 +142,6 @@ void OccupancyMap::SetPoint(const Vec2i& pt, bool occupy) {
         if (occupy) {
             has_outside_pts_ = true;
         }
-
         return;
     }
 
