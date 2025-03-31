@@ -105,6 +105,40 @@ class EdgeSE2LikelihoodFiled : public g2o::BaseUnaryEdge<1, double, VertexSE2> {
     inline static const int image_boarder_ = 10;
 };
 
+class EdgeSE2P2L : public g2o::BaseUnaryEdge<1, double, VertexSE2> {  // 测量值为2维；SE2类型位姿顶点
+   public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EdgeSE2P2L(double range, double angle, Vec3d line_coeffs)
+        : range_(range), angle_(angle), line_coeffs_(line_coeffs) {}
+
+    // 定义残差
+    void computeError() override {
+        auto* pose = dynamic_cast<const VertexSE2*>(_vertices[0]);
+        Vec2d pw = pose->estimate() * Vec2d(range_ * std::cos(angle_), range_ * std::sin(angle_));
+        _error[0] = line_coeffs_[0] * pw[0] + line_coeffs_[1] * pw[1] + line_coeffs_[2];
+        // TODO
+        //  std::cout<<"|err: "<<_error[0]<<"pose: "<<pose->estimate().translation()<<std::endl;
+    }
+
+    // 雅可比矩阵的解析形式
+    // void linearizeOplus() override {
+    //     auto* pose = dynamic_cast<const VertexSE2*>(_vertices[0]);
+    //     float theta = pose->estimate().so2().log(); // 当前位姿的角度
+    //     _jacobianOplusXi <<   line_coeffs_[0],
+    //                           line_coeffs_[1],
+    //                         - line_coeffs_[0] * range_ * std::sin(angle_ + theta)
+    //                         + line_coeffs_[1] * range_ * std::cos(angle_ + theta);
+    // }
+
+    bool read(std::istream& is) override { return true; }
+    bool write(std::ostream& os) const override { return true; }
+
+   private:
+    double range_ = 0;   // 距离
+    double angle_ = 0;   // 角度
+    Vec3d line_coeffs_;  // 直线拟合系数 A,B,C
+};
+
 /**
  * SE2 pose graph使用
  * error = v1.inv * v2 * meas.inv
