@@ -121,4 +121,9 @@ inline SE3 Mat4ToSE3(const Eigen::Matrix<S, 4, 4>& m) {
 
 }  // namespace sad
 
+inline std::ostream& operator<<(std::ostream& os, const Sophus::SE2d& pose) {
+    os << "SE2 [x, y]:" << pose.translation().transpose() << ", θ:" << pose.so2().log();
+    return os;
+}
+
 #endif  // MAPPING_EIGEN_TYPES_H

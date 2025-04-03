@@ -12,3 +12,8 @@ This repo is the course project collecion of the [Deep Blue Academy SLAM Course.
 - Start terminal simulator. 
 - Go to `/home/rico`
 - Run binaries in directory: `/bin/<BINARY>`
+
+## Custom Tools Added By Rico
+
+- `ros1_scan_2_txt.cpp`. A tool to convert ros 1 scan messages to text.
+    - TODO: timestamp needs to be adjusted

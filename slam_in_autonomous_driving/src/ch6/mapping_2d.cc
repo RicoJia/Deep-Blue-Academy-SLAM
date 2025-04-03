@@ -77,6 +77,8 @@ bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
     auto field_image = current_submap_->GetLikelihood().GetFieldImage();
     Visualize2DScan(current_frame_->scan_, current_frame_->pose_, field_image, Vec3b(0, 0, 255), 1000, 20.0,
                     current_submap_->GetPose());
+    //TODO
+    std::cout<<"frame world pose"<<current_frame_->pose_<<std::endl;
     cv::imshow("likelihood", field_image);
 
     /// global map
@@ -86,7 +88,8 @@ bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
 
     // TODO test code
     // cv::waitKey(10);
-    cv::waitKey(0);
+    // cv::waitKey(0);
+    close_cv_window_on_esc();
 
     if (last_frame_) {
         motion_guess_ = last_frame_->pose_.inverse() * current_frame_->pose_;

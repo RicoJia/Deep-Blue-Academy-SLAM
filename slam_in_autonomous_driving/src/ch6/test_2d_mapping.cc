@@ -16,6 +16,9 @@
 DEFINE_string(bag_path, "./dataset/sad/2dmapping/floor1.bag", "数据包路径");
 DEFINE_bool(with_loop_closing, false, "是否使用回环检测");
 
+// int FLAGS_num_frame_skip=500;
+DEFINE_int64(num_frame_skip, 0, "Number of frames to skip");
+
 /// 测试2D lidar SLAM
 
 sensor_msgs::LaserScanPtr lidarToLaserScan(const sad::Lidar &lidar) {
@@ -82,8 +85,14 @@ int main(int argc, char** argv) {
     if (mapping.Init(FLAGS_with_loop_closing) == false) {
         return -1;
     }
+    int frame_num = -1;
 
-    rosbag_io.AddScan2DHandle("/pavo_scan_bottom", [&](Scan2d::Ptr scan) { return mapping.ProcessScan(scan); }).Go();
+    rosbag_io.AddScan2DHandle("/pavo_scan_bottom", [&](Scan2d::Ptr scan) { 
+        frame_num ++;
+        //TODO
+        std::cout<<"============================= frame: "<<frame_num<<std::endl;
+        if (0 < frame_num && frame_num < FLAGS_num_frame_skip){return true;}
+        return mapping.ProcessScan(scan); }).Go();
     // txt_io.SetLidarProcessFunc([&](const sad::Lidar& lidar_txt_msg) { 
     //     auto scan = lidarToLaserScan(lidar_txt_msg);
     //     return mapping.ProcessScan(scan); }).Go();

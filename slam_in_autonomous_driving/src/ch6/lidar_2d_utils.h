@@ -9,6 +9,7 @@
 #include "common/lidar_utils.h"
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
 
 /// 为2D lidar的一些辅助函数
 namespace sad {
@@ -25,6 +26,14 @@ namespace sad {
 void Visualize2DScan(Scan2d::Ptr scan, const SE2& pose, cv::Mat& image, const Vec3b& color, int image_size = 800,
                      float resolution = 20.0, const SE2& pose_submap = SE2());
 
-}  // namespace sad
+inline void close_cv_window_on_esc() {
+    while (true) {
+        int key = cv::waitKey(0);
+        if (key == 27) {
+            break;
+        }
+    }
+}
 
+}  // namespace sad
 #endif  // SLAM_IN_AUTO_DRIVING_LIDAR_2D_UTILS_H
