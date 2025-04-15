@@ -198,7 +198,7 @@ bool LikelihoodField::AlignG2O(SE2& init_pose) {
         optimizer.addEdge(e);
     }
 
-    optimizer.setVerbose(true);
+    optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(10);
 

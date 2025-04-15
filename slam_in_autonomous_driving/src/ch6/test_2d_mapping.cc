@@ -8,66 +8,54 @@
 #include "ch6/lidar_2d_utils.h"
 #include "ch6/mapping_2d.h"
 #include "common/io_utils.h"
-#include "common/lidar2D.h"
 
 #include <cmath>
 #include <limits>
 
-DEFINE_string(bag_path, "./dataset/sad/2dmapping/floor1.bag", "数据包路径");
-DEFINE_bool(with_loop_closing, false, "是否使用回环检测");
+DEFINE_string(bag_path, "data/2dmapping/floor2.bag", "Bag path");
+DEFINE_bool(with_loop_closing, false, "Whether to use loop closure");
 
-// int FLAGS_num_frame_skip=500;
-DEFINE_int64(num_frame_skip, 0, "Number of frames to skip");
+// int FLAGS_num_frames_skip=500;
+DEFINE_int64(num_frames_skip, 0, "Number of frames to skip");
 
 /// 测试2D lidar SLAM
 
-sensor_msgs::LaserScanPtr lidarToLaserScan(const sad::Lidar &lidar) {
-    sensor_msgs::LaserScanPtr scan_msg = boost::make_shared<sensor_msgs::LaserScan>();
-    scan_msg->header.frame_id = "laser_frame"; // Update frame as needed
-
-    if (lidar.points_.empty()) {
-        // No points, so fill with zeros.
-        scan_msg->angle_min = 0.0;
-        scan_msg->angle_max = 0.0;
-        scan_msg->angle_increment = 0.0;
+    sensor_msgs::LaserScanPtr convertScanFromTxt(std::stringstream &ss) {
+        // Read the scan parameters.
+        double time, angle_min, angle_increment, range_min, range_max;
+        int num_points;
+        ss >> time >> angle_min >> angle_increment >> range_min >> range_max >> num_points;
+        
+        // Create a new LaserScan message.
+        sensor_msgs::LaserScanPtr scan_msg = boost::make_shared<sensor_msgs::LaserScan>();
+        
+        // Convert the timestamp.
+        uint32_t sec = static_cast<uint32_t>(time);
+        uint32_t nsec = static_cast<uint32_t>((time - sec) * 1e9);
+        scan_msg->header.stamp.sec = sec;
+        scan_msg->header.stamp.nsec = nsec;
+        scan_msg->header.frame_id = "laser_frame";  // Adjust the frame as needed.
+        
+        // Populate the LaserScan parameters.
+        scan_msg->angle_min = angle_min;
+        scan_msg->angle_increment = angle_increment;
+        scan_msg->range_min = range_min;
+        scan_msg->range_max = range_max;
+        scan_msg->angle_max = (num_points > 0) ? (angle_min + angle_increment * (num_points - 1)) : angle_min;
+        scan_msg->time_increment = 0.0;  // Unknown from raw data.
+        scan_msg->scan_time = 0.0;       // Unknown from raw data.
+        
+        // Resize and fill in the ranges.
+        scan_msg->ranges.resize(num_points);
+        for (int i = 0; i < num_points; ++i) {
+            ss >> scan_msg->ranges[i];
+        }
+        
+        // Optionally, initialize intensities (here set to zeros).
+        scan_msg->intensities.resize(num_points, 0.0f);
+        
+        return scan_msg;
     }
-
-    // Compute angles and ranges for each point.
-    std::vector<float> ranges;
-    ranges.reserve(lidar.points_.size());
-
-    double min_angle = std::numeric_limits<double>::max();
-    double max_angle = -std::numeric_limits<double>::max();
-
-    for (const Vec2d &pt : lidar.points_) {
-        double angle = std::atan2(pt.y(), pt.x());
-        float r = std::hypot(pt.x(), pt.y());
-        ranges.push_back(r);
-        if (angle < min_angle) { min_angle = angle; }
-        if (angle > max_angle) { max_angle = angle; }
-    }
-
-    scan_msg->angle_min = min_angle;
-    scan_msg->angle_max = max_angle;
-    if (lidar.points_.size() > 1) {
-        scan_msg->angle_increment = (max_angle - min_angle) / static_cast<double>(lidar.points_.size() - 1);
-    } else {
-        scan_msg->angle_increment = 0.0;
-    }
-
-    // Set other LaserScan parameters.
-    scan_msg->time_increment = 0.0; // Unknown from Lidar data
-    scan_msg->scan_time = 0.0;      // Unknown from Lidar data
-    scan_msg->range_min = 0.0;      // Set as appropriate for your sensor
-    scan_msg->range_max = std::numeric_limits<float>::max(); // Set as appropriate
-
-    // Fill the computed ranges.
-    scan_msg->ranges = ranges;
-    // Optionally, initialize intensities (here with zeros).
-    scan_msg->intensities.resize(ranges.size(), 0.0);
-
-    return scan_msg;
-}
 
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
@@ -77,10 +65,12 @@ int main(int argc, char** argv) {
 
     sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path);
     // Test Code
-    // sad::TxtIO txt_io("./data/2dmapping/scan_file.txt");
-    sad::Mapping2D mapping;
+    // sad::TxtIO txt_io("./data/2dmapping/loop2_scan_file.txt");
 
     std::system("rm -rf ./data/ch6/*");
+    sad::Mapping2D mapping;
+    //TODO
+    std::cout<<"loop closing: "<<FLAGS_with_loop_closing<<std::endl;
 
     if (mapping.Init(FLAGS_with_loop_closing) == false) {
         return -1;
@@ -91,10 +81,11 @@ int main(int argc, char** argv) {
         frame_num ++;
         //TODO
         std::cout<<"============================= frame: "<<frame_num<<std::endl;
-        if (0 < frame_num && frame_num < FLAGS_num_frame_skip){return true;}
-        return mapping.ProcessScan(scan); }).Go();
-    // txt_io.SetLidarProcessFunc([&](const sad::Lidar& lidar_txt_msg) { 
-    //     auto scan = lidarToLaserScan(lidar_txt_msg);
+        bool visualize_this_scan = true;
+        if (0 < frame_num && frame_num < FLAGS_num_frames_skip) visualize_this_scan = false;
+        return mapping.ProcessScan(scan, visualize_this_scan); }).Go();
+    // txt_io.SetLidarProcessFunc([&](std::stringstream& ss) { 
+    //     auto scan = convertScanFromTxt(ss);
     //     return mapping.ProcessScan(scan); }).Go();
     cv::imwrite("./data/ch6/global_map.png", mapping.ShowGlobalMap(2000));
     return 0;

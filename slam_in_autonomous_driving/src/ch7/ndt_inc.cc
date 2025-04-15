@@ -240,6 +240,7 @@ void IncNdt3d::ComputeResidualAndJacobians(const SE3& input_pose, Mat18d& HTVH, 
     std::vector<Vec3d> errors(total_size);
     std::vector<Mat3d> infos(total_size);
 
+    // RICO: Not needed for now
     // gauss-newton 迭代
     // 最近邻，可以并发
     std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](int idx) {
@@ -305,6 +306,7 @@ void IncNdt3d::ComputeResidualAndJacobians(const SE3& input_pose, Mat18d& HTVH, 
     LOG(INFO) << "effective: " << effective_num;
 }
 
+// RICO: Not needed for now
 void IncNdt3d::BuildNDTEdges(sad::VertexPose* v, std::vector<EdgeNDT*>& edges) {
     assert(grids_.empty() == false);
     SE3 pose = v->estimate();

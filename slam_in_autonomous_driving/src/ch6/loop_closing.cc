@@ -74,7 +74,7 @@ bool LoopClosing::DetectLoopCandidates() {
         double dis = (center - frame_pos).norm();
         if (dis < candidate_distance_th_) {
             /// 如果这个frame离submap中心差距小于阈值，则检查
-            LOG(INFO) << "taking " << current_frame_->keyframe_id_ << " with " << sp.first
+            std::cout << "taking " << current_frame_->keyframe_id_ << " with " << sp.first
                       << ", last submap id: " << last_submap_id_;
             current_candidates_.emplace_back(sp.first);
         }
@@ -101,7 +101,7 @@ void LoopClosing::MatchInHistorySubmaps() {
                 pose_in_target_submap * current_frame_->pose_.inverse() * submaps_[last_submap_id_]->GetPose();
             loop_constraints_.emplace(std::pair<size_t, size_t>(can, last_submap_id_),
                                       LoopConstraints(can, last_submap_id_, T_this_cur));
-            LOG(INFO) << "adding loop from submap " << can << " to " << last_submap_id_;
+            std::cout << "Loop matched: last map " << can << " to current map: " << last_submap_id_;
 
             /// 可视化显示
             auto occu_image = submap->GetOccuMap().GetOccupancyGridBlackWhite();

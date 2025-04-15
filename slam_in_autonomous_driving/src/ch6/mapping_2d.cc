@@ -28,7 +28,7 @@ bool Mapping2D::Init(bool with_loop_closing) {
 
 bool Mapping2D::ProcessScan(MultiScan2d::Ptr scan) { return ProcessScan(MultiToScan2d(scan)); }
 
-bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
+bool Mapping2D::ProcessScan(Scan2d::Ptr scan, bool visualize_this_scan) {
     current_frame_ = std::make_shared<Frame>(scan);
     current_frame_->id_ = frame_id_++;
 
@@ -64,39 +64,39 @@ bool Mapping2D::ProcessScan(Scan2d::Ptr scan) {
         }
     }
 
-    /// 可视化输出
-    auto occu_image = current_submap_->GetOccuMap().GetOccupancyGridBlackWhite();
-    Visualize2DScan(current_frame_->scan_, current_frame_->pose_, occu_image, Vec3b(0, 0, 255), 1000, 20.0,
-                    current_submap_->GetPose());
-    cv::putText(occu_image, "submap " + std::to_string(current_submap_->GetId()), cv::Point2f(20, 20),
-                cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 255, 0));
-    cv::putText(occu_image, "keyframes " + std::to_string(current_submap_->NumFrames()), cv::Point2f(20, 50),
-                cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 255, 0));
-    cv::imshow("occupancy map", occu_image);
-
-    auto field_image = current_submap_->GetLikelihood().GetFieldImage();
-    Visualize2DScan(current_frame_->scan_, current_frame_->pose_, field_image, Vec3b(0, 0, 255), 1000, 20.0,
-                    current_submap_->GetPose());
-    //TODO
-    std::cout<<"frame world pose"<<current_frame_->pose_<<std::endl;
-    cv::imshow("likelihood", field_image);
-
-    /// global map
-    if (is_kf) {
-        cv::imshow("global map", ShowGlobalMap());
-    }
-
-    // TODO test code
-    // cv::waitKey(10);
-    // cv::waitKey(0);
-    close_cv_window_on_esc();
-
     if (last_frame_) {
         motion_guess_ = last_frame_->pose_.inverse() * current_frame_->pose_;
     }
 
     last_frame_ = current_frame_;
 
+    if (visualize_this_scan) {    /// 可视化输出
+        auto occu_image = current_submap_->GetOccuMap().GetOccupancyGridBlackWhite();
+        Visualize2DScan(current_frame_->scan_, current_frame_->pose_, occu_image, Vec3b(0, 0, 255), 1000, 20.0,
+                        current_submap_->GetPose());
+        cv::putText(occu_image, "submap " + std::to_string(current_submap_->GetId()), cv::Point2f(20, 20),
+                    cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 255, 0));
+        cv::putText(occu_image, "keyframes " + std::to_string(current_submap_->NumFrames()), cv::Point2f(20, 50),
+                    cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(0, 255, 0));
+        cv::imshow("occupancy map", occu_image);
+
+        auto field_image = current_submap_->GetLikelihood().GetFieldImage();
+        Visualize2DScan(current_frame_->scan_, current_frame_->pose_, field_image, Vec3b(0, 0, 255), 1000, 20.0,
+                        current_submap_->GetPose());
+        //TODO
+        std::cout<<"frame world pose"<<current_frame_->pose_<<std::endl;
+        cv::imshow("likelihood", field_image);
+
+        /// global map
+        if (is_kf) {
+            cv::imshow("global map", ShowGlobalMap());
+        }
+
+        // TODO test code
+        // cv::waitKey(10);
+        // cv::waitKey(0);
+        close_cv_window_on_esc();
+    }
     return true;
 }
 

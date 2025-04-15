@@ -16,7 +16,6 @@
 #include "common/global_flags.h"
 #include "common/gnss.h"
 #include "common/imu.h"
-#include "common/lidar2D.h"
 #include "common/lidar_utils.h"
 #include "common/math_utils.h"
 #include "common/message_def.h"
@@ -40,7 +39,7 @@ class TxtIO {
     using IMUProcessFuncType = std::function<void(const IMU &)>;
     using OdomProcessFuncType = std::function<void(const Odom &)>;
     using GNSSProcessFuncType = std::function<void(const GNSS &)>;
-    using LidarProcessFuncType = std::function<void(const Lidar &)>;  // New callback type for Lidar
+    using LidarProcessFuncType = std::function<void(std::stringstream &)>;  // New callback type for Lidar
 
     TxtIO &SetIMUProcessFunc(IMUProcessFuncType imu_proc) {
         imu_proc_ = std::move(imu_proc);
@@ -70,7 +69,7 @@ class TxtIO {
     IMUProcessFuncType imu_proc_;
     OdomProcessFuncType odom_proc_;
     GNSSProcessFuncType gnss_proc_;
-    LidarProcessFuncType lidar_proc_;  
+    LidarProcessFuncType lidar_proc_;
 };
 
 /**

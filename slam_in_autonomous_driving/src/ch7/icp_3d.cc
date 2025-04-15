@@ -32,7 +32,11 @@ bool Icp3d::AlignP2P(SE3& init_pose) {
     for (int iter = 0; iter < options_.max_iteration_; ++iter) {
         // gauss-newton 迭代
         // 最近邻，可以并发
-        std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](int idx) {
+        //TODO
+        std::cout<<"pose: "<<pose<<std::endl;
+        std::for_each(
+            // std::execution::par_unseq,   //TODO
+            index.begin(), index.end(), [&](int idx) {
             auto q = ToVec3d(source_->points[idx]);
             Vec3d qs = pose * q;  // 转换之后的q
             std::vector<int> nn;
@@ -40,6 +44,8 @@ bool Icp3d::AlignP2P(SE3& init_pose) {
 
             if (!nn.empty()) {
                 Vec3d p = ToVec3d(target_->points[nn[0]]);
+                //TODO
+                std::cout<<"idx: "<<idx<<", "<<q.transpose()<<"|qs: "<<qs.transpose()<<"|match: "<<nn[0]<<", "<<p.transpose()<<std::endl;
                 double dis2 = (p - qs).squaredNorm();
                 if (dis2 > options_.max_nn_distance_) {
                     // 点离的太远了不要

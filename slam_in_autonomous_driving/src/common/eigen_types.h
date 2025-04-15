@@ -126,4 +126,11 @@ inline std::ostream& operator<<(std::ostream& os, const Sophus::SE2d& pose) {
     return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os, const Sophus::SE3d& pose) {
+    os << "SE3:";
+    os << "  [SO3] " << pose.so3().log().transpose();
+    os << "  [Translation] " << pose.translation().transpose() << "\n";
+    return os;
+}
+
 #endif  // MAPPING_EIGEN_TYPES_H

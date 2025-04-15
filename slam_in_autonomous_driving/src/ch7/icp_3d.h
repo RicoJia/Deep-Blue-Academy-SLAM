@@ -56,6 +56,8 @@ class Icp3d {
 
     void SetGroundTruth(const SE3& gt_pose) {
         gt_pose_ = gt_pose;
+        // TODO
+        std::cout << "ground_truth_pose: " << gt_pose << std::endl;
         gt_set_ = true;
     }
 

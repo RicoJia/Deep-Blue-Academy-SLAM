@@ -25,7 +25,7 @@ class Mapping2D {
     bool Init(bool with_loop_closing = true);
 
     /// 单回波的scan
-    bool ProcessScan(Scan2d::Ptr scan);
+    bool ProcessScan(Scan2d::Ptr scan, bool visualize_this_scan = true);
 
     /// 多回波的scan
     /// 暂时没用到

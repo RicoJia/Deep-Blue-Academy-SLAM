@@ -40,7 +40,7 @@ void Ndt3d::BuildVoxels() {
             // SVD 检查最大与最小奇异值，限制最小奇异值
 
             Eigen::JacobiSVD svd(v.second.sigma_, Eigen::ComputeFullU | Eigen::ComputeFullV);
-            Vec3d lambda = svd.singularValues();
+            Vec3d lambda = svd.singularValues();    // eigen values of A^TA, where A = sigma_
             if (lambda[1] < lambda[0] * 1e-3) {
                 lambda[1] = lambda[0] * 1e-3;
             }
