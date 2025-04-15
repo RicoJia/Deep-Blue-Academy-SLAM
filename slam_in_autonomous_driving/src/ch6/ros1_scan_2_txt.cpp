@@ -31,6 +31,23 @@ inline void save_scan_ros1_2_txt(const sensor_msgs::LaserScan::ConstPtr& scan_ms
     ofs << "\n";
 }
 
+/**
+ *     1. sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path, sad::Str2DatasetType(FLAGS_dataset_type));
+        - Stores ULHK
+    2. .AddAutoPointCloudHandle([&ndt_lo](sensor_msgs::PointCloud2::Ptr msg) -> bool {
+            return AddHandle(GetLidarTopicName(), [f](const rosbag::MessageInstance &m) -> bool {
+                auto msg = m.instantiate<sensor_msgs::PointCloud2>();
+                if (msg == nullptr) {
+                    return false;
+                }
+                return f(msg);
+    3.  std::string RosbagIO::GetLidarTopicName() const {
+        // TODO: 1 - get topic
+        if (dataset_type_ == DatasetType::ULHK) {
+            return ulhk_lidar_topic;
+        }
+ */
+
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_stderrthreshold = google::INFO;
