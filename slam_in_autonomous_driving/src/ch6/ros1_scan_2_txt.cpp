@@ -1,5 +1,7 @@
+// TODO: under development
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <cmath>
 #include <fstream>
 
@@ -48,6 +50,9 @@ inline void save_scan_ros1_2_txt(const sensor_msgs::LaserScan::ConstPtr& scan_ms
         }
  */
 
+inline void save_ulhk_3d_scan_ros1_2_txt(const sensor_msgs::PointCloud2::Ptr& scan_msg) {
+}
+
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_stderrthreshold = google::INFO;
@@ -62,7 +67,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    sad::RosbagIO rosbag_io(FLAGS_bag_path);
+    sad::RosbagIO rosbag_io(FLAGS_bag_path, sad::Str2DatasetType("ULHK"));
     Scan2d::Ptr last_scan = nullptr, current_scan = nullptr;
 
     // Register a callback that processes scan messages.
@@ -72,7 +77,13 @@ int main(int argc, char** argv) {
                              // Directly use the scan data.
                              save_scan_ros1_2_txt(scan);
                              return true;
-                         })
+                         }).
+        AddAutoPointCloudHandle(
+            [&ndt_lo](sensor_msgs::PointCloud2::Ptr msg) -> bool {
+                save_ulhk_3d_scan_ros1_2_txt(msg);
+                return true;
+            }
+        ).            
         .Go();
 
     ofs.close();  // Close the file when done.
