@@ -1,5 +1,6 @@
 //
 // Created by xiang on 2022/7/18.
+// ./bin/test_ndt_lo --bag_path data/ulhk/test2.bag --stopping_msg_index 1000 --start_visualize_msg_index 100
 //
 
 #include <gflags/gflags.h>
@@ -14,11 +15,13 @@
 /// 本程序以ULHK数据集为例
 /// 测试以NDT为主的Lidar Odometry
 /// 若使用PCL NDT的话，会重新建立NDT树
-DEFINE_string(bag_path, "./dataset/sad/ulhk/test2.bag", "path to rosbag");
+DEFINE_string(bag_path, "./data/ulhk/test2.bag", "path to rosbag");
 DEFINE_string(dataset_type, "ULHK", "NCLT/ULHK/KITTI/WXB_3D");  // 数据集类型
 DEFINE_bool(use_pcl_ndt, false, "use pcl ndt to align?");
 DEFINE_bool(use_ndt_nearby_6, false, "use ndt nearby 6?");
 DEFINE_bool(display_map, true, "display map?");
+DEFINE_int64(stopping_msg_index, 0, "0 means no limit, otherwise stop at this message index");
+DEFINE_int64(start_visualize_msg_index, 0, "start visualization from this index");
 
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
@@ -26,7 +29,9 @@ int main(int argc, char** argv) {
     FLAGS_colorlogtostderr = true;
     google::ParseCommandLineFlags(&argc, &argv, true);
 
-    sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path, sad::Str2DatasetType(FLAGS_dataset_type));
+    size_t stopping_msg_index = 0;
+    sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path, sad::Str2DatasetType(FLAGS_dataset_type), 
+        FLAGS_stopping_msg_index);
 
     sad::DirectNDTLO::Options options;
     options.use_pcl_ndt_ = fLB::FLAGS_use_pcl_ndt;
@@ -35,12 +40,20 @@ int main(int argc, char** argv) {
     options.display_realtime_cloud_ = FLAGS_display_map;
     sad::DirectNDTLO ndt_lo(options);
 
+    size_t num_msgs = 0;
+
     rosbag_io
-        .AddAutoPointCloudHandle([&ndt_lo](sensor_msgs::PointCloud2::Ptr msg) -> bool {
+        .AddAutoPointCloudHandle([&](sensor_msgs::PointCloud2::Ptr msg) -> bool {
             sad::common::Timer::Evaluate(
                 [&]() {
                     SE3 pose;
-                    ndt_lo.AddCloud(sad::VoxelCloud(sad::PointCloud2ToCloudPtr(msg)), pose);
+                    auto raw_cloud_ptr = sad::VoxelCloud(sad::PointCloud2ToCloudPtr(msg));
+                    //TODO
+                    std::cout<<"=================================num_msgs: "<<num_msgs<<", num points: "<<raw_cloud_ptr->points.size()<<std::endl;
+                    bool visualize = FLAGS_start_visualize_msg_index < num_msgs;
+                    ndt_lo.AddCloud(raw_cloud_ptr , pose, visualize);
+                    rosbag_io.incrementMsgNum();
+                    num_msgs++;
                 },
                 "NDT registration");
             return true;

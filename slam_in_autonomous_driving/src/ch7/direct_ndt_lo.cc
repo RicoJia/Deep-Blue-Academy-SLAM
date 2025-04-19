@@ -10,7 +10,17 @@
 
 namespace sad {
 
-void DirectNDTLO::AddCloud(CloudPtr scan, SE3& pose) {
+    /**
+     * Workflow:
+     * 1. If it's the first frame, add it to the local map and set the pose to identity.
+     * 2. If it's not the first frame:
+     *   - Align the current scan with the current target 
+     *   - Transform the scan to the world frame (TODO: I think we need to check the scan matching success)
+     *   - If it's key frame:
+     *      - Update the local map with the new scan, keep the number of keyframes constant
+     *      - Set the local map as the new target for the next scan
+     */
+void DirectNDTLO::AddCloud(CloudPtr scan, SE3& pose, bool visualize) {
     if (local_map_ == nullptr) {
         // 第一个帧，直接加入local map
         local_map_.reset(new PointCloudType);
@@ -54,11 +64,15 @@ void DirectNDTLO::AddCloud(CloudPtr scan, SE3& pose) {
         }
     }
 
-    if (viewer_ != nullptr) {
+    if (visualize && viewer_ != nullptr) {
         viewer_->SetPoseAndCloud(pose, scan_world);
     }
 }
 
+/** Workflow:
+ * 1. is keyframe if the distance or angle between the current pose 
+ * and the last keyframe pose is larger than a threshold
+ */
 bool DirectNDTLO::IsKeyframe(const SE3& current_pose) {
     // 只要与上一帧相对运动超过一定距离或角度，就记关键帧
     SE3 delta = last_kf_pose_.inverse() * current_pose;
@@ -66,7 +80,12 @@ bool DirectNDTLO::IsKeyframe(const SE3& current_pose) {
            delta.so3().log().norm() > options_.kf_angle_deg_ * math::kDEG2RAD;
 }
 
-SE3 DirectNDTLO::AlignWithLocalMap(CloudPtr scan) {
+/** Workflow:
+ * 1. set source
+ * 2. Come up with a guess initial estimate
+ * 3. Align using NDT to get a pose estimate
+ */
+SE3 DirectNDTLO::AlignWithLocalMap(CloudPtr scan){
     if (options_.use_pcl_ndt_) {
         ndt_pcl_.setInputSource(scan);
     } else {

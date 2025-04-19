@@ -78,8 +78,9 @@ class TxtIO {
  */
 class RosbagIO {
    public:
-    explicit RosbagIO(std::string bag_file, DatasetType dataset_type = DatasetType::NCLT)
-        : bag_file_(std::move(bag_file)), dataset_type_(dataset_type) {
+    explicit RosbagIO(std::string bag_file, DatasetType dataset_type = DatasetType::NCLT,
+        size_t stopping_msg_index = 0)
+        : bag_file_(std::move(bag_file)), dataset_type_(dataset_type), stopping_msg_index_(stopping_msg_index) {
         assert(dataset_type_ != DatasetType::UNKNOWN);
     }
 
@@ -222,6 +223,8 @@ class RosbagIO {
     /// 清除现有的处理函数
     void CleanProcessFunc() { process_func_.clear(); }
 
+    void incrementMsgNum() { msg_num_++; }
+
    private:
     /// 根据设定的数据集名称获取雷达名
     std::string GetLidarTopicName() const;
@@ -235,6 +238,8 @@ class RosbagIO {
 
     // packets driver
     tools::VelodyneConvertor vlp_parser_;
+    size_t stopping_msg_index_ = 0;
+    size_t msg_num_ = 0;
 };
 
 }  // namespace sad

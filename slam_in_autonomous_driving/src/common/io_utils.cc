@@ -91,6 +91,10 @@ void RosbagIO::Go() {
         if (global::FLAG_EXIT) {
             break;
         }
+        if (msg_num_ > stopping_msg_index_) {
+            LOG(INFO) << "stopping msg index: " << msg_num_<<std::endl;
+            break;
+        }
     }
 
     bag.close();

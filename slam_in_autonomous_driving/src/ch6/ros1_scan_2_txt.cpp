@@ -1,4 +1,4 @@
-// TODO: under development
+// --bag_path 
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -10,7 +10,8 @@
 
 #include "common/io_utils.h"
 
-DEFINE_string(bag_path, "./data/2dmapping/floor2.bag", "数据包路径");
+// DEFINE_string(bag_path, "./data/2dmapping/floor2.bag", "数据包路径");
+DEFINE_string(bag_path, "./data/ulhk/test2.bag", "数据包路径");
 
 std::ofstream ofs;
 
@@ -34,7 +35,7 @@ inline void save_scan_ros1_2_txt(const sensor_msgs::LaserScan::ConstPtr& scan_ms
 }
 
 /**
- *     1. sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path, sad::Str2DatasetType(FLAGS_dataset_type));
+ *  1. sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path, sad::Str2DatasetType(FLAGS_dataset_type));
         - Stores ULHK
     2. .AddAutoPointCloudHandle([&ndt_lo](sensor_msgs::PointCloud2::Ptr msg) -> bool {
             return AddHandle(GetLidarTopicName(), [f](const rosbag::MessageInstance &m) -> bool {
@@ -44,14 +45,63 @@ inline void save_scan_ros1_2_txt(const sensor_msgs::LaserScan::ConstPtr& scan_ms
                 }
                 return f(msg);
     3.  std::string RosbagIO::GetLidarTopicName() const {
-        // TODO: 1 - get topic
-        if (dataset_type_ == DatasetType::ULHK) {
-            return ulhk_lidar_topic;
+            // TODO: 1 - get topic
+            if (dataset_type_ == DatasetType::ULHK) {
+                return ulhk_lidar_topic;
+            }
         }
  */
 
-inline void save_ulhk_3d_scan_ros1_2_txt(const sensor_msgs::PointCloud2::Ptr& scan_msg) {
-}
+inline void save_ulhk_3d_scan_ros1_2_txt(const sensor_msgs::PointCloud2::Ptr& msg){
+    if (!ofs.is_open()) {
+        LOG(ERROR) << "File is not open!";
+        return;
+    }
+    // fixed precision only affects floating‐point; we'll switch to hex later
+    ofs << std::fixed << std::setprecision(6);
+
+    // 1) header token + literal
+    ofs << "ulhk_3d" << ','
+        // 2) seq
+        << msg->header.seq << ','
+        // 3) stamp as sec.nanosec
+        << msg->header.stamp.sec << '.'
+        << std::setw(9) << std::setfill('0')
+        << msg->header.stamp.nsec << ','
+        // 4) frame_id, height, width, n_fields
+        << msg->header.frame_id << ','
+        << msg->height       << ','
+        << msg->width        << ','
+        << msg->fields.size();
+
+    // 5) each field
+    for (auto &f : msg->fields) {
+        ofs << ','
+            << f.name              << ','
+            << f.offset            << ','
+            << int(f.datatype)     << ','
+            << f.count;
+    }
+
+    // 6) metadata flags/strides
+    ofs << ','
+        << (msg->is_bigendian ? '1' : '0') << ','
+        << msg->point_step               << ','
+        << msg->row_step                 << ','
+        << (msg->is_dense   ? '1' : '0');
+
+    // 7) **raw data bytes** appended as hex
+    ofs << std::hex;                    // switch to hex
+    for (uint8_t byte : msg->data) {
+        ofs << ',' 
+            << std::setw(2) << std::setfill('0')
+            << int(byte);
+    }
+    ofs << std::dec                 // back to decimal for any future output
+        << std::setfill(' ')       // restore fill
+        << '\n'; 
+}    
+
 
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
@@ -77,13 +127,13 @@ int main(int argc, char** argv) {
                              // Directly use the scan data.
                              save_scan_ros1_2_txt(scan);
                              return true;
-                         }).
-        AddAutoPointCloudHandle(
-            [&ndt_lo](sensor_msgs::PointCloud2::Ptr msg) -> bool {
+                         })
+        .AddAutoPointCloudHandle(
+            [&](sensor_msgs::PointCloud2::Ptr msg) -> bool {
                 save_ulhk_3d_scan_ros1_2_txt(msg);
                 return true;
             }
-        ).            
+        )            
         .Go();
 
     ofs.close();  // Close the file when done.

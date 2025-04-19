@@ -63,6 +63,8 @@ class Ndt3d {
         target_center_ = std::accumulate(target->points.begin(), target_->points.end(), Vec3d::Zero().eval(),
                                          [](const Vec3d& c, const PointType& pt) -> Vec3d { return c + ToVec3d(pt); }) /
                          target_->size();
+        //TODO
+        std::cout<<"target pt size: "<<target_->points.size()<<std::endl;
     }
 
     /// 设置被配准的Scan
@@ -72,6 +74,8 @@ class Ndt3d {
         source_center_ = std::accumulate(source_->points.begin(), source_->points.end(), Vec3d::Zero().eval(),
                                          [](const Vec3d& c, const PointType& pt) -> Vec3d { return c + ToVec3d(pt); }) /
                          source_->size();
+        //TODO
+        std::cout<<"Source pt size: "<<source_->points.size()<<std::endl;
     }
 
     void SetGtPose(const SE3& gt_pose) {

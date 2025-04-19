@@ -45,6 +45,9 @@ class PCLMapViewer {
         voxel_filter_.setInputCloud(local_map_);
         voxel_filter_.filter(*local_map_);
 
+        //TODO
+        std::cout<<"local map point: "<<local_map_->size()<<std::endl;
+
         if (viewer_ != nullptr) {
             viewer_->removePointCloud("local_map");
             viewer_->removeCoordinateSystem("vehicle");

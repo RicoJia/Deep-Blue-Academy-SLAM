@@ -49,7 +49,7 @@ class DirectNDTLO {
      * @param scan  当前帧点云
      * @param pose 估计pose
      */
-    void AddCloud(CloudPtr scan, SE3& pose);
+    void AddCloud(CloudPtr scan, SE3& pose, bool visualize=true);
 
     /// 存储地图(viewer里）
     void SaveMap(const std::string& map_path);

@@ -8,7 +8,7 @@ This repo is the course project collecion of the [Deep Blue Academy SLAM Course.
 
 - start docker: `docker compose up`
 - go to `localhost:46080`
-- connect to vnc
+- connect to vnc. Password: `abc123`
 - Start terminal simulator. 
 - Go to `/home/rico`
 - Run binaries in directory: `/bin/<BINARY>`

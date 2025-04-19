@@ -166,9 +166,11 @@ bool Ndt3d::AlignNdt(SE3& init_pose) {
         pose.translation() += dx.tail<3>();
 
         // 更新
-        LOG(INFO) << "iter " << iter << " total res: " << total_res << ", eff: " << effective_num
+        std::cout << "iter " << iter << " total res: " << total_res << ", eff: " << effective_num
                   << ", mean res: " << total_res / effective_num << ", dxn: " << dx.norm()
-                  << ", dx: " << dx.transpose();
+                  << ", dx: " << dx.transpose() <<std::endl;
+        //TODO
+        std::cout<<"pose: "<<pose<<std::endl;
 
         // std::sort(chi2.begin(), chi2.end());
         // LOG(INFO) << "chi2 med: " << chi2[chi2.size() / 2] << ", .7: " << chi2[chi2.size() * 0.7]
