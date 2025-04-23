@@ -1,4 +1,4 @@
-// --bag_path 
+// ./bin/ros1_scan_2_txt --bag_path "data/wxb/test1.bag"
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -12,6 +12,7 @@
 
 // DEFINE_string(bag_path, "./data/2dmapping/floor2.bag", "数据包路径");
 DEFINE_string(bag_path, "./data/ulhk/test2.bag", "数据包路径");
+using sad::FullCloudPtr;
 
 std::ofstream ofs;
 
@@ -33,24 +34,6 @@ inline void save_scan_ros1_2_txt(const sensor_msgs::LaserScan::ConstPtr& scan_ms
     }
     ofs << "\n";
 }
-
-/**
- *  1. sad::RosbagIO rosbag_io(fLS::FLAGS_bag_path, sad::Str2DatasetType(FLAGS_dataset_type));
-        - Stores ULHK
-    2. .AddAutoPointCloudHandle([&ndt_lo](sensor_msgs::PointCloud2::Ptr msg) -> bool {
-            return AddHandle(GetLidarTopicName(), [f](const rosbag::MessageInstance &m) -> bool {
-                auto msg = m.instantiate<sensor_msgs::PointCloud2>();
-                if (msg == nullptr) {
-                    return false;
-                }
-                return f(msg);
-    3.  std::string RosbagIO::GetLidarTopicName() const {
-            // TODO: 1 - get topic
-            if (dataset_type_ == DatasetType::ULHK) {
-                return ulhk_lidar_topic;
-            }
-        }
- */
 
 inline void save_ulhk_3d_scan_ros1_2_txt(const sensor_msgs::PointCloud2::Ptr& msg){
     if (!ofs.is_open()) {
@@ -102,6 +85,26 @@ inline void save_ulhk_3d_scan_ros1_2_txt(const sensor_msgs::PointCloud2::Ptr& ms
         << '\n'; 
 }    
 
+inline void save_full_cloud_ros2_2_txt(
+    const FullCloudPtr& cloud,
+    std::ostream& out)
+{
+    out << "PCLFULLCLOUD";
+
+    // for each point, prepend ", " then all fields space‑sep
+    for (const auto& p : cloud->points) {
+        out << ", "
+            << p.x << " " << p.y << " " << p.z   // PCL_ADD_POINT4D coords
+            << " "  << p.range
+            << " "  << p.radius
+            << " "  << static_cast<int>(p.intensity)
+            << " "  << static_cast<int>(p.ring)
+            << " "  << static_cast<int>(p.angle)
+            << " "  << p.time
+            << " "  << p.height;
+    }
+    out << "\n";
+}
 
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
@@ -133,7 +136,14 @@ int main(int argc, char** argv) {
                 save_ulhk_3d_scan_ros1_2_txt(msg);
                 return true;
             }
-        )            
+        ).
+        AddVelodyneHandle(
+            "/velodyne_packets_1",
+            [&](FullCloudPtr cloud) -> bool {
+                save_full_cloud_ros2_2_txt(cloud, ofs);
+                return true;
+            }
+        )
         .Go();
 
     ofs.close();  // Close the file when done.
