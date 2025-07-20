@@ -82,14 +82,19 @@ RUN apt-get update && apt-get install -y \
 # install pangolin
 RUN apt-get install git -y
 WORKDIR /root/software
-RUN git clone https://github.com/stevenlovegrove/Pangolin.git
-RUN cd Pangolin && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j8 && \
-    make install && \
-    ldconfig
+# install pangolin
+RUN git clone --depth 1 --branch v0.9.2 https://github.com/stevenlovegrove/Pangolin.git && \
+    cd Pangolin && mkdir build && cd build && \
+    cmake .. && make -j$(nproc) && make install && ldconfig
+# Old version
+# RUN git clone https://github.com/stevenlovegrove/Pangolin.git
+# RUN cd Pangolin && \
+#     mkdir build && \
+#     cd build && \
+#     cmake .. && \
+#     make -j8 && \
+#     make install && \
+#     ldconfig
 
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
