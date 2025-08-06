@@ -24,9 +24,6 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    //TODO
-    std::cout<<"imu txt is not empty"<<std::endl;
-
     // io_utils.cc
     sad::TxtIO io(FLAGS_imu_txt_path);
 

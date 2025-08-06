@@ -10,16 +10,19 @@ bool MessageSync::Sync() {
         return false;
     }
 
+    // First lidar msg
     if (!lidar_pushed_) {
         measures_.lidar_ = lidar_buffer_.front();
         measures_.lidar_begin_time_ = time_buffer_.front();
 
+        // The end time of the current scan
         lidar_end_time_ = measures_.lidar_begin_time_ + measures_.lidar_->points.back().time / double(1000);
 
         measures_.lidar_end_time_ = lidar_end_time_;
         lidar_pushed_ = true;
     }
 
+    // If imu is updated before lidar, no sync and wait for the next sync call
     if (last_timestamp_imu_ < lidar_end_time_) {
         return false;
     }

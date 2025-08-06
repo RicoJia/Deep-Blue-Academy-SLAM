@@ -11,6 +11,15 @@
 #include <execution>
 #include <set>
 
+/**
+ * Workflow:
+ * 1. add cloud: 
+ *   - remove points in voxel if there are too many
+ *   - You can even update the voxel's points 
+ *   - UpdateVoxel: update the voxel's mean and covariance if it has enough points
+ * 
+ */
+
 namespace sad {
 
 void IncNdt3d::AddCloud(CloudPtr cloud_world) {

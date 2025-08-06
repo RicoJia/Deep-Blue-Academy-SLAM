@@ -1,5 +1,6 @@
 //
 // Created by xiang on 22-12-20.
+// Save a large point cloud into voxelized sub-cloud pcds.
 //
 
 #include <gflags/gflags.h>

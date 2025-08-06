@@ -33,7 +33,13 @@ namespace sad {
  */
 class TxtIO {
    public:
-    TxtIO(const std::string &file_path) : fin(file_path) {}
+    TxtIO(const std::string &file_path) : fin(file_path) {
+        if (!fin.is_open()) {
+            throw std::runtime_error("Failed to open file: " + file_path);
+        } else {
+            std::cout << "File opened successfully: " << file_path << std::endl;
+        }
+    }
 
     /// 定义回调函数
     using IMUProcessFuncType = std::function<void(const IMU &)>;
