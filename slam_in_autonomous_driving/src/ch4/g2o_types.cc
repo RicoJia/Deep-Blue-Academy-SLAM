@@ -93,20 +93,20 @@ void EdgeInertial::checkJacobians() {
     Eigen::Matrix3d dp_dp2 = R1T.matrix();
     Eigen::Matrix3d dv_dv2 = R1T.matrix(); 
 
-    LOG(INFO) << "dR_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(0, 0) - dR_dR1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dv_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(3, 0) - dv_dR1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dp_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(6, 0) - dp_dR1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dp_dp1 diff: " << (_jacobianOplus[0].block<3, 3>(6, 3) - dp_dp1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dv_dv1 diff: " << (_jacobianOplus[1].block<3, 3>(3, 0) - dv_dv1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dp_dv1 diff: " << (_jacobianOplus[1].block<3, 3>(6, 0) - dp_dv1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dR_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(0, 0) - dR_dbg1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dv_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(3, 0) - dv_dbg1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dp_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(6, 0) - dp_dbg1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dv_dba1 diff: " << (_jacobianOplus[3].block<3, 3>(3, 0) - dv_dba1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dp_dba1 diff: " << (_jacobianOplus[3].block<3, 3>(6, 0) - dp_dba1).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dr_dr2 diff: " << (_jacobianOplus[4].block<3, 3>(0, 0) - dr_dr2).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dp_dp2 diff: " << (_jacobianOplus[4].block<3, 3>(6, 3) - dp_dp2).lpNorm<Eigen::Infinity>();
-    LOG(INFO) << "dv_dv2 diff: " << (_jacobianOplus[5].block<3, 3>(3, 0) - dv_dv2).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dR_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(0, 0) - dR_dR1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dv_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(3, 0) - dv_dR1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dp_dR1 diff: " << (_jacobianOplus[0].block<3, 3>(6, 0) - dp_dR1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dp_dp1 diff: " << (_jacobianOplus[0].block<3, 3>(6, 3) - dp_dp1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dv_dv1 diff: " << (_jacobianOplus[1].block<3, 3>(3, 0) - dv_dv1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dp_dv1 diff: " << (_jacobianOplus[1].block<3, 3>(6, 0) - dp_dv1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dR_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(0, 0) - dR_dbg1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dv_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(3, 0) - dv_dbg1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dp_dbg1 diff: " << (_jacobianOplus[2].block<3, 3>(6, 0) - dp_dbg1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dv_dba1 diff: " << (_jacobianOplus[3].block<3, 3>(3, 0) - dv_dba1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dp_dba1 diff: " << (_jacobianOplus[3].block<3, 3>(6, 0) - dp_dba1).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dr_dr2 diff: " << (_jacobianOplus[4].block<3, 3>(0, 0) - dr_dr2).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dp_dp2 diff: " << (_jacobianOplus[4].block<3, 3>(6, 3) - dp_dp2).lpNorm<Eigen::Infinity>();
+    // LOG(INFO) << "dv_dv2 diff: " << (_jacobianOplus[5].block<3, 3>(3, 0) - dv_dv2).lpNorm<Eigen::Infinity>();
 };
 
 // void EdgeInertial::linearizeOplus() {

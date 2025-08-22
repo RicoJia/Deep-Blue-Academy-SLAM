@@ -111,16 +111,25 @@ int main(int argc, char** argv) {
                 return;
             }
             sad::GNSS gnss_convert = gnss;
-            if (!sad::ConvertGps2UTM(gnss_convert, antenna_pos, FLAGS_antenna_angle) || !gnss_convert.heading_valid_) {
+            if (!sad::ConvertGps2UTM(gnss_convert, antenna_pos, FLAGS_antenna_angle
+                , origin
+            ) || !gnss_convert.heading_valid_) {
                 return;
             }
 
             /// 去掉原点
             if (!first_gnss_set) {
                 origin = gnss_convert.utm_pose_.translation();
+                //TODO
+                std::cout<<"set origin"<<std::endl;
                 first_gnss_set = true;
             }
-            gnss_convert.utm_pose_.translation() -= origin;
+            //TODO
+            std::cout<<"origin: "<<origin.transpose()<<std::endl;
+            // TODO
+            // gnss_convert.utm_pose_.translation() -= origin;
+            //TODO
+            std::cout<<"utm_pose_: "<<gnss_convert.utm_pose_.translation().transpose()<<std::endl;
 
             gins.AddGnss(gnss_convert);
 

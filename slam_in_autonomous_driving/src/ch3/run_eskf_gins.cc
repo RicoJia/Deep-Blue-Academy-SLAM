@@ -45,7 +45,11 @@ int main(int argc, char** argv) {
         fout << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << " ";
     };
 
-    auto save_result = [&save_vec3, &save_quat](std::ofstream& fout, const sad::NavStated& save_state) {
+    auto save_result = [&save_vec3, &save_quat](std::ofstream& fout, const sad::NavStated& save_state, bool is_imu) {
+        if (is_imu)
+            fout << "imu ";
+        else 
+            fout << "gps ";
         fout << std::setprecision(18) << save_state.timestamp_ << " " << std::setprecision(9);
         save_vec3(fout, save_state.p_);
         save_quat(fout, save_state.R_.unit_quaternion());
@@ -70,13 +74,10 @@ int main(int argc, char** argv) {
 
     io.SetIMUProcessFunc([&](const sad::IMU& imu) {
           /// IMU 处理函数
-          // This will only be True if StaticIMUInit::TryInit has done the calculation
-          // and returns True. (static_imu_init.cc)
           if (!imu_init.InitSuccess()) {
               imu_init.AddIMU(imu);
               return;
           }
-          // IMU is successful here.
 
           /// 需要IMU初始化
           if (!imu_inited) {
@@ -105,7 +106,7 @@ int main(int argc, char** argv) {
           }
 
           /// 记录数据以供绘图
-          save_result(fout, state);
+          save_result(fout, state, true);
 
           usleep(1e3);
       })
@@ -115,6 +116,8 @@ int main(int argc, char** argv) {
                 return;
             }
 
+            //TODO
+            std::cout<<"GPS================================="<<std::endl;
             sad::GNSS gnss_convert = gnss;
             if (!sad::ConvertGps2UTM(gnss_convert, antenna_pos, FLAGS_antenna_angle) || !gnss_convert.heading_valid_) {
                 return;
@@ -134,7 +137,7 @@ int main(int argc, char** argv) {
             if (ui) {
                 ui->UpdateNavState(state);
             }
-            save_result(fout, state);
+            save_result(fout, state, false);
 
             gnss_inited = true;
         })

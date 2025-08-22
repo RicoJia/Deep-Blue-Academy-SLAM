@@ -58,6 +58,8 @@ bool ConvertGps2UTM(GNSS& gps_msg, const Vec2d& antenna_pos, const double& anten
     gps_msg.utm_.xy_[1] = TWB.translation().y();
     gps_msg.utm_.z_ = TWB.translation().z();
 
+    //TODO
+    std::cout<<"map origin: "<<map_origin.transpose()<<std::endl;
     if (gps_msg.heading_valid_) {
         // 组装为带旋转的位姿
         gps_msg.utm_pose_ = TWB;
@@ -67,6 +69,8 @@ bool ConvertGps2UTM(GNSS& gps_msg, const Vec2d& antenna_pos, const double& anten
         gps_msg.utm_pose_ = SE3(SO3(), TWB.translation());
     }
 
+    //TODO
+    std::cout<<"pose: "<<gps_msg.utm_pose_.translation().transpose()<<std::endl;
     return true;
 }
 

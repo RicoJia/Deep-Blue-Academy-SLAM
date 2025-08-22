@@ -86,6 +86,13 @@ class ESKF {
         ba_ = init_ba;
         g_ = gravity;
         cov_ = Mat18T::Identity() * 1e-4;
+
+        //TODO
+        std::cout<<"Initial conds: "
+        << "bg: " << bg_.transpose()
+        << ", ba: " << ba_.transpose()
+        << ", g: " << g_.transpose()
+        <<std::endl;
     }
 
     /// 使用IMU递推
@@ -144,6 +151,8 @@ class ESKF {
 
         // 设置过程噪声
         Q_.diagonal() << 0, 0, 0, ev2, ev2, ev2, et2, et2, et2, eg2, eg2, eg2, ea2, ea2, ea2, 0, 0, 0;
+        //TODO
+        std::cout<<"Q params: "<<ev2<<", "<<et2<<", "<<eg<<", "<<ea2<<std::endl;
 
         // 设置里程计噪声
         double o2 = options_.odom_var_ * options_.odom_var_;
@@ -161,8 +170,7 @@ class ESKF {
         p_ += dx_.template block<3, 1>(0, 0);
         v_ += dx_.template block<3, 1>(3, 0);
         // TODO: left perturbation
-        // R_ = R_ * SO3::exp(dx_.template block<3, 1>(6, 0));
-        R_ = SO3::exp(dx_.template block<3, 1>(6, 0)) * R_ ;
+        R_ = R_ * SO3::exp(dx_.template block<3, 1>(6, 0));
 
         if (options_.update_bias_gyro_) {
             bg_ += dx_.template block<3, 1>(9, 0);
@@ -179,6 +187,14 @@ class ESKF {
         // << "ba inc: "<< dx_.template block<3, 1>(12, 0)
         // << "g inc: "<< dx_.template block<3, 1>(15, 0)
         // <<std::endl;
+        std::cout
+        // << "innov: "<<innov<<std::endl
+        << "dx_: "<<std::endl<<dx_<<std::endl
+        <<", R: "<<R_.log().transpose()<<std::endl
+        <<", v_: "<< v_.transpose()<<std::endl
+        << "p_: "<<p_.transpose()<<std::endl
+        << "P_ . norm(): "<<std::endl<<cov_.norm()<<std::endl
+        << "----------------"<<std::endl;
 
         ProjectCov();
         dx_.setZero();
@@ -187,9 +203,7 @@ class ESKF {
     /// 对P阵进行投影，参考式(3.63)
     void ProjectCov() {
         Mat18T J = Mat18T::Identity();
-        // TODO
-        // J.template block<3, 3>(6, 6) = Mat3T::Identity() - 0.5 * SO3::hat(dx_.template block<3, 1>(6, 0));
-        J.template block<3, 3>(6, 6) = Mat3T::Identity() + 0.5 * SO3::hat(dx_.template block<3, 1>(6, 0));
+        J.template block<3, 3>(6, 6) = Mat3T::Identity() - 0.5 * SO3::hat(dx_.template block<3, 1>(6, 0));
         cov_ = J * cov_ * J.transpose();
     }
 
@@ -246,38 +260,39 @@ bool ESKF<S>::Predict(const IMU& imu) {
     v_ = new_v;
     p_ = new_p;
 
-    // TODO
     // Left perturbation
-    Mat18T F = Mat18T::Identity();                                                 // Main diagonal
-    // Populate the matrix based on the given mathematical structure
-    F.template block<3, 3>(0, 3) = Mat3T::Identity() * dt;  // I * Δt for position to velocity
-
-    // TODO??
-    // F.template block<3, 3>(3, 3) = Mat3T::Identity() * dt;  // I * Δt for velocity to velocity
-    F.template block<3, 3>(3, 6) = -SO3::hat(R_.matrix() * (imu.acce_ - ba_)) * dt;  // -(R(tilde{a} - b_a))^∧ Δt
-    F.template block<3, 3>(3, 12) = -(R_.matrix() * dt);  // -R * Δt for velocity to bias acceleration
-    F.template block<3, 3>(3, 15) = Mat3T::Identity() * dt;  // I * Δt for velocity to gravity
-    F.template block<3, 3>(6, 6) = Mat3T::Identity();  // -R * Δt for orientation to bias angular velocity
-    F.template block<3, 3>(6, 12) = -(R_.matrix() * dt);  // -R * Δt for orientation to bias angular velocity
-
     // 其余状态维度不变
     // error state 递推
     // 计算运动过程雅可比矩阵 F，见(3.47)
     // F实际上是稀疏矩阵，也可以不用矩阵形式进行相乘而是写成散装形式，这里为了教学方便，使用矩阵形式
-    // Mat18T F = Mat18T::Identity();                                                 // 主对角线
-    // F.template block<3, 3>(0, 3) = Mat3T::Identity() * dt;                         // p 对 v
-    // F.template block<3, 3>(3, 6) = -R_.matrix() * SO3::hat(imu.acce_ - ba_) * dt;  // v对theta
-    // F.template block<3, 3>(3, 12) = -R_.matrix() * dt;                             // v 对 ba
-    // F.template block<3, 3>(3, 15) = Mat3T::Identity() * dt;                        // v 对 g
-    // F.template block<3, 3>(6, 6) = SO3::exp(-(imu.gyro_ - bg_) * dt).matrix();     // theta 对 theta
-    // F.template block<3, 3>(6, 9) = -Mat3T::Identity() * dt;                        // theta 对 bg
+    Mat18T F = Mat18T::Identity();                                                 // 主对角线
+    F.template block<3, 3>(0, 3) = Mat3T::Identity() * dt;                         // p 对 v
+    F.template block<3, 3>(3, 6) = -R_.matrix() * SO3::hat(imu.acce_ - ba_) * dt;  // v对theta
+    F.template block<3, 3>(3, 12) = -R_.matrix() * dt;                             // v 对 ba
+    F.template block<3, 3>(3, 15) = Mat3T::Identity() * dt;                        // v 对 g
+    F.template block<3, 3>(6, 6) = SO3::exp(-(imu.gyro_ - bg_) * dt).matrix();     // theta 对 theta
+    F.template block<3, 3>(6, 9) = -Mat3T::Identity() * dt;                        // theta 对 bg
 
     // mean and cov prediction
     dx_ = F * dx_;  // 这行其实没必要算，dx_在重置之后应该为零，因此这步可以跳过，但F需要参与Cov部分计算，所以保留
-    //TODO
-    // std::cout<<"Prediction: dx should be 0: "<<dx_.tail(9)<<std::endl;
     cov_ = F * cov_.eval() * F.transpose() + Q_;
     current_time_ = imu.timestamp_;
+
+    //TODO
+    std::cout<<"ts: "<< std::fixed << std::setprecision(9)<<imu.timestamp_
+    // << "dt: "<< dt 
+    <<", R: "<<R_.log().transpose()<<std::endl
+    // << ", a_car: " << imu.acce_.transpose()
+    // << ", ba_: " << ba_.transpose()
+    // << "(a_car - ba_): " << imu.acce_ - ba_
+    // << ", (R(a_car - ba_)): "<< (R_ * (imu.acce_ - ba_)).transpose()
+    // << ", (R(a_car - ba_) + g_): "<< (R_ * (imu.acce_ - ba_) + g_).transpose()
+    // <<", w_car - bg_: "<<  (imu.gyro_ - bg_).transpose() << 
+    <<", v_: "<< v_.transpose()<<std::endl
+    << "p_: "<<p_.transpose()<<std::endl
+    << "F norm: "<<F.norm()<<std::endl
+    << "Q_ norm: "<<Q_.norm()<<std::endl
+    << "P_ norm: "<<cov_.norm()<<std::endl;
     return true;
 }
 
@@ -339,7 +354,9 @@ bool ESKF<S>::ObserveSE3(const SE3& pose, double trans_noise, double ang_noise) 
     H.template block<3, 3>(3, 6) = Mat3T::Identity();  // R部分（3.66)
 
     // 卡尔曼增益和更新过程
+    // NOTE, we are NOT using gnss_ noise
     Vec6d noise_vec;
+    options_.gnss_pos_noise_, options_.gnss_ang_noise_
     noise_vec << trans_noise, trans_noise, trans_noise, ang_noise, ang_noise, ang_noise;
 
     Mat6d V = noise_vec.asDiagonal();
@@ -348,9 +365,7 @@ bool ESKF<S>::ObserveSE3(const SE3& pose, double trans_noise, double ang_noise) 
     // 更新x和cov
     Vec6d innov = Vec6d::Zero();
     innov.template head<3>() = (pose.translation() - p_);          // 平移部分
-    // TODO: left perturbation
-    innov.template tail<3>() = (pose.so3() * R_.inverse()).log();  // 旋转部分(3.67)
-    // innov.template tail<3>() = (R_.inverse() * pose.so3()).log();  // 旋转部分(3.67)
+    innov.template tail<3>() = (R_.inverse() * pose.so3()).log();  // 旋转部分(3.67)
 
     dx_ = K * innov;
     //TODO
