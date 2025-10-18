@@ -475,15 +475,15 @@ inline bool PoseInterp(double query_time, C&& data, FT&& take_time_func, FP&& ta
         }
     }
 
-    auto match_iter_n = match_iter;
-    match_iter_n++;
+    auto match_iter_n = match_iter; // points to imu data whose time is right before the query time
+    match_iter_n++;     // points to imu data whose time is right after the query time. 
 
-    double dt = take_time_func(*match_iter_n) - take_time_func(*match_iter);
-    double s = (query_time - take_time_func(*match_iter)) / dt;  // s=0 时为第一帧，s=1时为next
+    double dt = take_time_func(*match_iter_n) - take_time_func(*match_iter);    // time between 2 imu states 
+    double s = (query_time - take_time_func(*match_iter)) / dt;  // s=0 时为第一帧，s=1时为next. Percentage of query time w.r.t the 2 imu states
     // 出现了 dt为0的bug
     if (fabs(dt) < 1e-6) {
         best_match = *match_iter;
-        result = take_pose_func(*match_iter);
+        result = take_pose_func(*match_iter);       // finding the pose at query time.
         return true;
     }
 

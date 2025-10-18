@@ -4,4 +4,4 @@ int32   sequence_num	##消息数
 int32   version			##版本号
 int32   error_code		##故障码
 int32   fault_level		##故障等级
-string  msg				##故障描述
+string  msg				##故障描

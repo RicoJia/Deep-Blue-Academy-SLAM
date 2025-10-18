@@ -31,14 +31,14 @@ void CloudConvert::Process(const sensor_msgs::PointCloud2::ConstPtr &msg, FullCl
 void CloudConvert::AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
     cloud_out_.clear();
     cloud_full_.clear();
-    int plsize = msg->point_num;
+    int num_points = msg->point_num;
 
-    cloud_out_.reserve(plsize);
-    cloud_full_.resize(plsize);
+    cloud_out_.reserve(num_points);
+    cloud_full_.resize(num_points);
 
-    std::vector<bool> is_valid_pt(plsize, false);
-    std::vector<uint> index(plsize - 1);
-    for (uint i = 0; i < plsize - 1; ++i) {
+    std::vector<bool> is_valid_pt(num_points, false);
+    std::vector<uint> index(num_points - 1);
+    for (uint i = 0; i < num_points - 1; ++i) {
         index[i] = i + 1;  // 从1开始
     }
 
@@ -61,7 +61,7 @@ void CloudConvert::AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg)
         }
     });
 
-    for (uint i = 1; i < plsize; i++) {
+    for (uint i = 1; i < num_points; i++) {
         if (is_valid_pt[i]) {
             cloud_out_.points.push_back(cloud_full_[i]);
         }
@@ -73,8 +73,8 @@ void CloudConvert::Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg) 
     cloud_full_.clear();
     pcl::PointCloud<ouster_ros::Point> pl_orig;
     pcl::fromROSMsg(*msg, pl_orig);
-    int plsize = pl_orig.size();
-    cloud_out_.reserve(plsize);
+    int num_points = pl_orig.size();
+    cloud_out_.reserve(num_points);
 
     for (int i = 0; i < pl_orig.points.size(); i++) {
         if (i % point_filter_num_ != 0) continue;
@@ -100,17 +100,18 @@ void CloudConvert::VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg
 
     pcl::PointCloud<velodyne_ros::Point> pl_orig;
     pcl::fromROSMsg(*msg, pl_orig);
-    int plsize = pl_orig.points.size();
-    cloud_out_.reserve(plsize);
+    int num_points = pl_orig.points.size();
+    cloud_out_.reserve(num_points);
 
     double omega_l = 3.61;  // scan angular velocity
     std::vector<bool> is_first(num_scans_, true);
-    std::vector<double> yaw_fp(num_scans_, 0.0);    // yaw of first scan point
+    std::vector<double> yaw_fp(num_scans_, 0.0);    // yaw of first scan point. Yes, because consecutive pl_orig.points may be from different layers.
     std::vector<float> yaw_last(num_scans_, 0.0);   // yaw of last scan point
     std::vector<float> time_last(num_scans_, 0.0);  // last offset time
 
     bool given_offset_time = false;
-    if (pl_orig.points[plsize - 1].time > 0) {
+    // This block is basically useless
+    if (pl_orig.points[num_points - 1].time > 0) {
         given_offset_time = true;
     } else {
         given_offset_time = false;
@@ -118,7 +119,7 @@ void CloudConvert::VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg
         double yaw_first = atan2(pl_orig.points[0].y, pl_orig.points[0].x) * 57.29578;
         double yaw_end = yaw_first;
         int layer_first = pl_orig.points[0].ring;
-        for (uint i = plsize - 1; i > 0; i--) {
+        for (uint i = num_points - 1; i > 0; i--) {
             if (pl_orig.points[i].ring == layer_first) {
                 yaw_end = atan2(pl_orig.points[i].y, pl_orig.points[i].x) * 57.29578;
                 break;
@@ -126,7 +127,8 @@ void CloudConvert::VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg
         }
     }
 
-    for (int i = 0; i < plsize; i++) {
+    for (int i = 0; i < num_points; i++) {
+        // 1. Get orig xyz, time, intensity
         FullPointType added_pt;
         added_pt.x = pl_orig.points[i].x;
         added_pt.y = pl_orig.points[i].y;
@@ -134,14 +136,17 @@ void CloudConvert::VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg
         added_pt.intensity = pl_orig.points[i].intensity;
         added_pt.time = pl_orig.points[i].time * time_scale_;  // curvature unit: ms
 
-        /// 略掉过近的点
+        /// 略掉过近的点 > 4. TODO: should be a param
         if (added_pt.getVector3fMap().norm() < 4.0) {
             continue;
         }
 
+        // If no offset time, get the layer, yaw of the point; guess time to be yaw_diff / omega. Need to wrap it if yaw is larger than that.
         if (!given_offset_time) {
             int layer = pl_orig.points[i].ring;
-            double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957;
+            //TODO
+            std::cout<<"pl_orig.points[i].ring: "<<pl_orig.points[i].ring<<std::endl;
+            double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957; // radians to deg
 
             if (is_first[layer]) {
                 yaw_fp[layer] = yaw_angle;
@@ -159,6 +164,7 @@ void CloudConvert::VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg
                 added_pt.time = (yaw_fp[layer] - yaw_angle + 360.0) / omega_l;
             }
 
+            // TODO: I don't think this is necessary? If 1 velodyne message should contains 1 rev, then the above wrapping is enough
             if (added_pt.time < time_last[layer]) {
                 added_pt.time += 360.0 / omega_l;
             }
