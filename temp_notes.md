@@ -43,4 +43,7 @@ delta x_k in eskf and NDT's delta x in gauss newton are related
 ## Tightly Coupled Lio
 
 - TODO; 状态估计书，3.3.2??
+- NDT 天生有误差，凡是LIO必然有重影。大部分slam 其实都是离线见图，除了圆盘扫地机器人。
+- TODO：point - plane iEKF
+- 一定要自己tune。很多建图效果其实都是靠调参弄出来的
 
